@@ -4,9 +4,9 @@
   "description": "Stream audio data to Icecast server",
   "main": "index.js",
   "dependencies": {
-    "lame": "~1.1.1",
-    "ogg": "~1.1.2",
-    "log4js": "~0.6.21"
+    "log4js": "~0.6.21",
+    "mp3-parser": "^0.2.4",
+    "lame": "^1.1.1"
   },
   "devDependencies": {},
   "scripts": {
