@@ -4,6 +4,7 @@ var util = require('util');
 var lame = require('lame')
 var stream = require("stream");
 var logger = require('logger');
+var config = require('config/config');
 
 // in ms
 var streamBuffer = 1000;
@@ -21,80 +22,60 @@ var Mpeg = function(connection) {
 		outSampleRate: 44100
 	};
 }
-
+// remove this function?
 Mpeg.prototype.preapare = function(pcm, callback) {
-	console.time("preapare");
-	var self = this;
-	var s = this.encode(pcm);
-	var buffer = [];
-	s.on('data', function(data) {
-		buffer.push(data);
-	});
-	s.on('end', function() {
-		self.nextByteData = Buffer.concat(buffer);
-		logger.debug('Packet data length: ' + self.nextByteData.length);
-		buffer = new DataView(toArrayBuffer(self.nextByteData));
-		var frames = [];
+	this.nextByteData = pcm;
+	if (null !== callback) {
+		callback.call(this);
+	}
 
-		for(var offset = 0; offset < buffer.byteLength; offset++) {
-			var frame = parser.readFrame(buffer, offset)
-			if (frame) {
-				frames.push({offset: frame._section.offset, len: frame._section.byteLength});
-				offset += frame._section.byteLength - 1;
-			}
-		}
-
-		self.nextFrames = frames;
-		console.log(self.nextFrames.length);
-		console.timeEnd("preapare");
-		if (null !== callback) {
-			callback.call(self);
-		}
-	});
 
 }
 
-Mpeg.prototype.sendData = function(b, endOfFile) {
-	var now = Date.now()
-	var needToSend = now - this.start;
-	logger.debug('needToSend: ' + needToSend);
-	logger.debug('nextFrameIndex. ' + this.nextFrameIndex);
+/*
+16 bit pcm
+44 100 sampling rate
+2 channels
+*/
+Mpeg.prototype.sendData = function(endOfFile) {
+	var self = this;
+	var now = Date.now() + 800
+	var timeSinceLastSendms = now - this.start;
 	var end = false;
-	var endIndex = this.nextFrameIndex + Math.ceil(needToSend / 22.125);
-	if (endIndex > (this.frames.length - 1)) {
-		endIndex = this.frames.length -1
+	logger.debug('needToSend: ' + timeSinceLastSendms);
+
+	var bytesToSend = Math.ceil(timeSinceLastSendms * 44.1 * 2) * 2;
+
+	if (bytesToSend + self.byteOffset > self.byteData.length -1 - getCrossFadeOffset()) {
+		var limitedBytesToSend = self.byteData.length - getCrossFadeOffset() - self.byteOffset;
+		var timeSync = limitedBytesToSend / bytesToSend;
+		bytesToSend = limitedBytesToSend;
+		self.start = self.start + ((now - self.start) * timeSync);
 		end = true;
 	}
-	if (!this.halfDoneSend && endIndex > (this.frames.length / 4)) {
-		console.log(endIndex + ' : ' + this.frames.length);
-		this.halfDoneSend = true;
-		this.halfDone();
-	}
-	logger.debug('Endindex: ' + endIndex + ' ' + this.frames[endIndex].offset);
-	logger.debug('startindex: ' + this.nextFrameIndex + ' ' + this.frames[this.nextFrameIndex].offset);
-	var dataLength = 0;
-	for (var i = this.nextFrameIndex; i < endIndex; i++) {
-		dataLength += this.frames[i].len;
-	}
-	var data = new Buffer(dataLength);
-	logger.debug('datalen: ' + dataLength);
-	var pointer = 0;
-	for (var i = this.nextFrameIndex; i < endIndex; i++) {
-		var frame = this.frames[i];
-		b.copy(data, pointer, frame.offset, frame.offset + frame.len);
-		pointer += frame.len;
+
+	var tmpBuffer = new Buffer(bytesToSend);
+	self.byteData.copy(tmpBuffer, 0, self.byteOffset, (self.byteOffset + bytesToSend));
+
+	self.byteOffset += bytesToSend;
+	if (undefined === this.encoder) {
+		this.encoder = new lame.Encoder(this.encoderConf)
+		this.encoder.pipe(self.connection, {end: false});
 	}
 
-	this.start = now;
-	this.nextFrameIndex = endIndex++;
-	this.connection.write(data, function() {
-		logger.debug('send done');
-	});
+	else if (!self.halfDoneSend && self.byteOffset > self.byteData.length / 2) {
+		self.halfDone();
+		self.halfDoneSend = true;
+	}
+
+	this.encoder.write(tmpBuffer);
 	if (end) {
-		console.log('end');
 		endOfFile();
 	}
-};
+	else {
+		self.start = now;
+	}
+}
 
 
 Mpeg.prototype.decode = function(file) {
@@ -118,18 +99,24 @@ Mpeg.prototype.start = function(file) {
 	var self = this;
 	if (undefined === self.byteData) {
 		self.byteData = self.nextByteData;
-		self.frames = self.nextFrames;
-		self.nextFrameIndex = 0;
+		self.byteOffset = 0;
 	}
 	var interval = setInterval(function() {
-		self.sendData(self.byteData, function() {
-			console.log('callback');
+		self.sendData(function() {
 			self.byteData = self.nextByteData;
-			self.frames = self.nextFrames;
-			self.nextFrameIndex = 0;
-			this.halfDoneSend = false;
+			self.byteOffset = 0;
+			self.start = Date.now();
+			self.halfDoneSend = false;
 		});
-	}, 1000);
+	}, 900);
+}
+
+var getCrossFadeOffset = function() {
+	var seconds = config.crossfade;
+	if (!isNaN(seconds)) {
+		return seconds * 44100 * 2 * 2;
+	}
+
 }
 
 var toArrayBuffer = function(buffer) {
