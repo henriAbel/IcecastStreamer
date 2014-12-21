@@ -3,16 +3,18 @@ var config = require('config/config');
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
+var events = require('events');
+var metadata = require('ffmetadata');
 
 var Player = function(streamer) {
 	this.streamer = streamer;
+	events.EventEmitter.call(this);
 	var self = this;
 	self.songIndex = 0;
 	self.files = getAudioFiles('.mp3', 0, config.musicDir);
 	logger.debug(util.format('Found %s files in: %s', self.files.length, config.musicDir));
-	this.streamer.halfDone = function() {
-		var song = self.getNextSong();
-		var stream = self.streamer.decode(song);
+	this.streamer.on('halfDone', function() {
+		var stream = self.getNextSong();
 		getDataFromStream(stream, function(data2) {
 			console.time('crossfade')
 			crossfade(data2, self.data, config.crossfade);
@@ -21,14 +23,15 @@ var Player = function(streamer) {
 				self.data = data2;
 			});
 		});
-	};
+	})
 	this.playing = false;
 }
 
+Player.prototype.__proto__ = events.EventEmitter.prototype;
+
 Player.prototype.start = function() {
 	var self = this;
-	var song = self.getNextSong();
-	var stream = this.streamer.decode(song);
+	var stream = self.getNextSong();
 	getDataFromStream(stream, function(data) {
 		self.data = data;
 		self.streamer.preapare(self.data, function() {
@@ -37,19 +40,21 @@ Player.prototype.start = function() {
 	});
 };
 
-var getAudioFiles = function(type, depth, filePath) {
+var getAudioFiles = function(type, depth, filePaths) {
 	var audioFiles = [];
-	var files = fs.readdirSync(filePath);
-	files.forEach(function(fileName) {
-		if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
-			if (depth < 2) {
-				audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, path.join(filePath, fileName)));
+	filePaths.forEach(function(filePath) {
+		var files = fs.readdirSync(filePath);
+		files.forEach(function(fileName) {
+			if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
+				if (depth < 2) {
+					audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, [path.join(filePath, fileName)]));
+				}
 			}
-		}
-		else if (path.extname(fileName) == '.mp3') {
-			audioFiles.push(path.join(filePath, fileName));
-		}
-	})
+			else if (path.extname(fileName) == '.mp3') {
+				audioFiles.push(path.join(filePath, fileName));
+			}
+		})
+	});
 	return audioFiles;
 }
 
@@ -90,6 +95,18 @@ var getDataFromStream = function(stream, done) {
 }
 
 Player.prototype.getNextSong = function() {
+	var path = this.getNextSongPath();
+	var self = this;
+	metadata.read(path, function(err, data) {
+		if (!err) {
+			self.metadata = data;
+		}
+	});
+	var stream = this.streamer.decode(path);
+	return stream;
+}
+
+Player.prototype.getNextSongPath = function() {
 	var file = this.files[this.songIndex]
 	this.songIndex++;
 	if (this.songIndex >= this.files.length - 1) {
@@ -97,5 +114,9 @@ Player.prototype.getNextSong = function() {
 	}
 	return file;
 };
+
+Player.prototype.next = function() {
+	this.streamer.next();
+}
 
 module.exports = Player;

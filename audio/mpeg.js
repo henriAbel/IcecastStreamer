@@ -5,6 +5,7 @@ var lame = require('lame')
 var stream = require("stream");
 var logger = require('logger');
 var config = require('config/config');
+var events = require('events');
 
 // in ms
 var streamBuffer = 1000;
@@ -21,15 +22,17 @@ var Mpeg = function(connection) {
 		bitRate: 128,
 		outSampleRate: 44100
 	};
+	events.EventEmitter.call(this);
 }
+
+Mpeg.prototype.__proto__ = events.EventEmitter.prototype;
+
 // remove this function?
 Mpeg.prototype.preapare = function(pcm, callback) {
 	this.nextByteData = pcm;
 	if (null !== callback) {
 		callback.call(this);
 	}
-
-
 }
 
 /*
@@ -64,12 +67,13 @@ Mpeg.prototype.sendData = function(endOfFile) {
 	}
 
 	else if (!self.halfDoneSend && self.byteOffset > self.byteData.length / 2) {
-		self.halfDone();
+		self.emit('halfDone');
 		self.halfDoneSend = true;
 	}
 
 	this.encoder.write(tmpBuffer);
 	if (end) {
+		self.emit('songEnd');
 		endOfFile();
 	}
 	else {
@@ -98,25 +102,28 @@ Mpeg.prototype.start = function(file) {
 	this.start = Date.now();
 	var self = this;
 	if (undefined === self.byteData) {
-		self.byteData = self.nextByteData;
-		self.byteOffset = 0;
+		self.next();
 	}
 	var interval = setInterval(function() {
 		self.sendData(function() {
-			self.byteData = self.nextByteData;
-			self.byteOffset = 0;
-			self.start = Date.now();
-			self.halfDoneSend = false;
+			self.next();
 		});
 	}, 900);
 }
+
+Mpeg.prototype.next = function() {
+	this.byteData = this.nextByteData;
+	this.byteOffset = 0;
+	this.start = Date.now();
+	this.halfDoneSend = false;
+	this.emit('songStart');
+};
 
 var getCrossFadeOffset = function() {
 	var seconds = config.crossfade;
 	if (!isNaN(seconds)) {
 		return seconds * 44100 * 2 * 2;
 	}
-
 }
 
 var toArrayBuffer = function(buffer) {

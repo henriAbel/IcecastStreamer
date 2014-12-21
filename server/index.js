@@ -3,11 +3,14 @@ var util = require('util');
 var Icecast = require('./icecast');
 
 
-var client, icecast;
+var icecast;
 var start = function() {
-	logger.debug('server started');
-
 	icecast = new Icecast();
 }
 
+var getInstance = function() {
+	return icecast;
+}
+
 module.exports.start = start;
+module.exports.getInstance = getInstance;

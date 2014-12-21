@@ -2,6 +2,7 @@ var logger = require('logger');
 var config = require('config/config');
 var util = require('util');
 var net = require('net');
+var http = require('http');
 var player = require('server/audioPlayer');
 
 var Icecast = function() {
@@ -22,13 +23,18 @@ var Icecast = function() {
 		this.type = 'audio/mpeg';
 		var stream = require('audio/mpeg');
 		this.streamer = new stream(this.connection);
+		this.streamer.on('songStart', function() {
+			self.sendMeta(self.player.metadata);
+		});
 	}
 	else {
 		// Encoder not found
 		process.exit(1);
 	}
+
 	if (name.indexOf('/') != 0) name = '/' + name;
 	this.name = name;
+
 }
 
 Icecast.prototype.onMessage = function(message) {
@@ -37,6 +43,17 @@ Icecast.prototype.onMessage = function(message) {
 		this.player = new player(this.streamer);
 		this.player.start();
 	}
+}
+
+Icecast.prototype.sendMeta = function(metadata) {
+	var songName = util.format('%s - %s', metadata.artist, metadata.title);
+	var options = {
+		host: config.icecast.host,
+		path: encodeURI(util.format('/admin/metadata?pass=%s&mount=%s&mode=updinfo&song=%s', this.password, this.name, songName)),
+		port: config.icecast.port,
+		headers: {'Authorization': 'Basic ' + this.password}
+	};
+	http.request(options).end();
 }
 
 Icecast.prototype.onClose = function() {
