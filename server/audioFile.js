@@ -8,8 +8,12 @@ var AudioFile = function(path) {
 	metadata.read(path, function(err, data) {
 		if (!err) {
 			self.metadata = data;
-			if (self.metadataCallback.length > 0)
-				metadataCallback.call(self, data);
+			if (self.metadataCallback.length > 0) {
+				self.metadataCallback.forEach(function(callback) {
+					callback.call(self, data);
+				});
+				self.metadataCallback = [];
+			}
 		}
 	});
 

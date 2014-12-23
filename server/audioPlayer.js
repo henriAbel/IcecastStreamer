@@ -41,22 +41,17 @@ Player.prototype.start = function() {
 	});
 };
 
-var bre = false;
 var getAudioFiles = function(type, depth, filePaths) {
-	if (bre) return;
 	var audioFiles = [];
 	filePaths.forEach(function(filePath) {
-		if (bre) return;
 		var files = fs.readdirSync(filePath);
 		files.forEach(function(fileName) {
-			if (bre) return;
 			if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
 				if (depth < 2) {
 					audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, [path.join(filePath, fileName)]));
 				}
 			}
 			else if (path.extname(fileName) == '.mp3') {
-				bre = true;
 				audioFiles.push(new audioFile(path.join(filePath, fileName)));
 			}
 		})
