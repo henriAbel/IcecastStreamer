@@ -1,0 +1,10 @@
+@media screen and (max-width: 768px) {
+	.container {
+		margin-right: -15px !important;
+		margin-left: -15px !important;
+	}
+}
+
+.container {
+	margin-top: 51px;
+}

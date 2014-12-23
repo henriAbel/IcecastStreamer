@@ -12,7 +12,7 @@ var start = function() {
 
 	app.use('/', router);
 
-	app.listen(config.client.port)
+	app.listen(config.client.port);
 	logger.debug('client started');
 }
 

@@ -1,10 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="webui">
 <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Streamer</title>
+	<base href="/" />
 	<script src="static/dist/bower.dep.js"></script>
 	<script src="static/dist/app.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="static/css/main.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 </head>
 <body>
+
+	<nav class="navbar navbar-default navbar-fixed-top navbar-inverse" ng-controller="HeaderController">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#top-menu">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				</button>
+			</div>
+			<div class="collapse navbar-collapse" id="top-menu">
+				<ul class="nav navbar-nav">
+					<li ng-class="{ active: isActive('/home/')}">
+						<a href="/home"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> Index</a>
+					</li>
+					<li ng-class="{ active: isActive('/music/')}">
+						<a href="/music"><span class="glyphicon glyphicon-music" aria-hidden="true"></span> Music</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+	<div ng-view class="container">
+	</div>
+
 </body>
 </html>
