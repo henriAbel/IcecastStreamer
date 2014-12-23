@@ -5,6 +5,7 @@ var path = require('path');
 var util = require('util');
 var events = require('events');
 var metadata = require('ffmetadata');
+var audioFile = require('./audioFile');
 
 var Player = function(streamer) {
 	this.streamer = streamer;
@@ -40,18 +41,23 @@ Player.prototype.start = function() {
 	});
 };
 
+var bre = false;
 var getAudioFiles = function(type, depth, filePaths) {
+	if (bre) return;
 	var audioFiles = [];
 	filePaths.forEach(function(filePath) {
+		if (bre) return;
 		var files = fs.readdirSync(filePath);
 		files.forEach(function(fileName) {
+			if (bre) return;
 			if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
 				if (depth < 2) {
 					audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, [path.join(filePath, fileName)]));
 				}
 			}
 			else if (path.extname(fileName) == '.mp3') {
-				audioFiles.push(path.join(filePath, fileName));
+				bre = true;
+				audioFiles.push(new audioFile(path.join(filePath, fileName)));
 			}
 		})
 	});
@@ -95,18 +101,14 @@ var getDataFromStream = function(stream, done) {
 }
 
 Player.prototype.getNextSong = function() {
-	var path = this.getNextSongPath();
-	var self = this;
-	metadata.read(path, function(err, data) {
-		if (!err) {
-			self.metadata = data;
-		}
-	});
-	var stream = this.streamer.decode(path);
+	var model = this.getNextSongModel();
+	this.currentSong = model;
+
+	var stream = this.streamer.decode(model.path);
 	return stream;
 }
 
-Player.prototype.getNextSongPath = function() {
+Player.prototype.getNextSongModel = function() {
 	var file = this.files[this.songIndex]
 	this.songIndex++;
 	if (this.songIndex >= this.files.length - 1) {

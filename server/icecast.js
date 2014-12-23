@@ -24,7 +24,9 @@ var Icecast = function() {
 		var stream = require('audio/mpeg');
 		this.streamer = new stream(this.connection);
 		this.streamer.on('songStart', function() {
-			self.sendMeta(self.player.metadata);
+			self.player.currentSong.getMetadata(function(data) {
+				self.sendMeta(data);
+			})
 		});
 	}
 	else {
@@ -47,6 +49,7 @@ Icecast.prototype.onMessage = function(message) {
 
 Icecast.prototype.sendMeta = function(metadata) {
 	var songName = util.format('%s - %s', metadata.artist, metadata.title);
+	logger.debug(util.format('Send metadata: %s', songName);)
 	var options = {
 		host: config.icecast.host,
 		path: encodeURI(util.format('/admin/metadata?pass=%s&mount=%s&mode=updinfo&song=%s', this.password, this.name, songName)),
