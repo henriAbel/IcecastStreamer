@@ -8,3 +8,8 @@
 .container {
 	margin-top: 51px;
 }
+
+.audio-control a {
+	float: left;
+	cursor: pointer;
+}

@@ -23,11 +23,6 @@ var Icecast = function() {
 		this.type = 'audio/mpeg';
 		var stream = require('audio/mpeg');
 		this.streamer = new stream(this.connection);
-		this.streamer.on('songStart', function() {
-			self.player.currentSong.getMetadata(function(data) {
-				self.sendMeta(data);
-			})
-		});
 	}
 	else {
 		// Encoder not found
@@ -41,8 +36,14 @@ var Icecast = function() {
 
 Icecast.prototype.onMessage = function(message) {
 	var msg = message.toString().trim();
+	var self = this;
 	if (msg == 'HTTP/1.0 200 OK') {
 		this.player = new player(this.streamer);
+		this.player.on('songChange', function(song) {
+			song.getMetadata(function(data) {
+				self.sendMeta(data);
+			})
+		});
 		this.player.start();
 	}
 }

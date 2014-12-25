@@ -104,11 +104,15 @@ Mpeg.prototype.start = function(file) {
 	if (undefined === self.byteData) {
 		self.next();
 	}
-	var interval = setInterval(function() {
+	this.interval = setInterval(function() {
 		self.sendData(function() {
 			self.next();
 		});
 	}, 900);
+}
+
+Mpeg.prototype.stop = function() {
+	clearInterval(this.interval);
 }
 
 Mpeg.prototype.next = function() {

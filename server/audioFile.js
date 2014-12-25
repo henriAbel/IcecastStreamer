@@ -1,3 +1,4 @@
+var logger = require('logger');
 var metadata = require('ffmetadata');
 var util = require('util');
 
@@ -34,7 +35,7 @@ AudioFile.prototype.updateMetadata = function(data) {
 			logger.debug("Error writing metadata", err)
 		}
 		else {
-			logger.debug(util("Updated %s metadata %s", self.path, data));
+			logger.debug(util.format("Updated %s metadata %s", self.path, data));
 			self.readMetadata();
 		}
 	});

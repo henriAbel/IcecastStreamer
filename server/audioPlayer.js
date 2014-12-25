@@ -14,7 +14,9 @@ var Player = function(streamer) {
 	self.songIndex = 0;
 	self.files = getAudioFiles('.mp3', 0, config.musicDir);
 	logger.debug(util.format('Found %s files in: %s', self.files.length, config.musicDir));
-	this.streamer.on('halfDone', function() {
+	this.streamer.on('songStart', function() {
+		self.currentSong = self.nextSongModel;
+		self.emit('songChange', self.currentSong);
 		var stream = self.getNextSong();
 		getDataFromStream(stream, function(data2) {
 			console.time('crossfade')
@@ -97,8 +99,7 @@ var getDataFromStream = function(stream, done) {
 
 Player.prototype.getNextSong = function() {
 	var model = this.getNextSongModel();
-	this.currentSong = model;
-
+	if (undefined === this.currentSong) this.currentSong = model;
 	var stream = this.streamer.decode(model.path);
 	return stream;
 }
@@ -106,7 +107,7 @@ Player.prototype.getNextSong = function() {
 Player.prototype.getNextSongModel = function() {
 	var file = this.files[this.songIndex]
 	this.songIndex++;
-	if (this.songIndex >= this.files.length - 1) {
+	if (this.songIndex > this.files.length - 1) {
 		this.songIndex = 0;
 	}
 	return file;
@@ -114,6 +115,28 @@ Player.prototype.getNextSongModel = function() {
 
 Player.prototype.next = function() {
 	this.streamer.next();
+}
+
+Player.prototype.stop = function() {
+	this.streamer.stop();
+}
+
+Player.prototype.prev = function() {
+	var self = this;
+	/* If song starts, next on is loaded right away
+	 * -1 is next song, -2 is current song, -3 is previous song
+	 */
+	self.songIndex = self.songIndex - 3;
+	if (self.songIndex < 0) self.songIndex = self.songIndex + self.files.length;
+	var stream = self.getNextSong();
+	getDataFromStream(stream, function(data) {
+		self.data = data;
+		self.streamer.preapare(self.data, function() {
+			this.next();
+		});
+	});
+	// Because async
+	return this.nextSongModel;
 }
 
 module.exports = Player;

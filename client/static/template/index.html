@@ -30,6 +30,11 @@
 					<li ng-class="{ active: isActive('/music/')}">
 						<a href="/music"><span class="glyphicon glyphicon-music" aria-hidden="true"></span> Music</a>
 					</li>
+					<li class="audio-control">
+						<a ng-click="prev()"><span class="glyphicon glyphicon-backward" aria-hidden="true"></span></a>
+						<a>{{currentSong}}</a>
+						<a ng-click="next()"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span></a>
+					</li>
 				</ul>
 			</div>
 		</div>
