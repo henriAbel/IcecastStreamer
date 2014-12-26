@@ -13,10 +13,10 @@ app.provider('PlayerProvider', function() {
 					action: 'next'
 				}
 			},
-			prev: {
+			getListeners: {
 				method: 'GET',
 				params: {
-					action: 'prev'
+					action: 'listeners'
 				}
 			}
 		});

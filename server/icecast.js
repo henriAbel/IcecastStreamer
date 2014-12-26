@@ -4,9 +4,11 @@ var util = require('util');
 var net = require('net');
 var http = require('http');
 var player = require('server/audioPlayer');
+var parseString = require('xml2js').parseString;
 
 var Icecast = function() {
 	var self = this;
+	self.listeners = {};
 	var client = net.connect({port: config.icecast.port, host: config.icecast.host}, function() {
 		self.onConnect();
 	});
@@ -45,6 +47,10 @@ Icecast.prototype.onMessage = function(message) {
 			})
 		});
 		this.player.start();
+		this.intervalId = setInterval(function() {
+			self.updateListeners();
+		}, 10000);
+		this.updateListeners();
 	}
 }
 
@@ -59,6 +65,23 @@ Icecast.prototype.sendMeta = function(metadata) {
 	};
 	http.request(options).end();
 }
+
+Icecast.prototype.updateListeners = function() {
+	var self = this;
+	var options = {
+		host: config.icecast.host,
+		path: encodeURI(util.format('/admin/listclients?mount=%s', this.name)),
+		port: config.icecast.port,
+		headers: {'Authorization': 'Basic ' + this.password}
+	};
+	http.request(options, function(response) {
+		response.on('data', function(xml) {
+			listeners = parseString(xml.toString(), function (err, result) {
+				self.listeners = result;
+			});
+		});
+	}).end();
+};
 
 Icecast.prototype.onClose = function() {
 	logger.debug('Connection closed');

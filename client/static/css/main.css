@@ -13,3 +13,30 @@
 	float: left;
 	cursor: pointer;
 }
+
+.no-results {
+	text-align: center;
+}
+
+.listeners-container h3 {
+	margin-top: 0;
+}
+
+#listeners {
+	width: 300px;
+}
+
+.dashboard {
+	margin-top: 25px;
+	text-align: center;
+}
+
+.left-column, .right-column {
+	display: inline-block;
+	vertical-align: top;
+	padding-right: 50px;
+}
+
+.coming-up {
+	color: #aaa;
+}

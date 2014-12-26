@@ -14,14 +14,16 @@ var Player = function(streamer) {
 	self.songIndex = 0;
 	self.files = getAudioFiles('.mp3', 0, config.musicDir);
 	logger.debug(util.format('Found %s files in: %s', self.files.length, config.musicDir));
+	this.currentSong = '';
 	this.streamer.on('songStart', function() {
 		self.currentSong = self.nextSongModel;
 		self.emit('songChange', self.currentSong);
 		var stream = self.getNextSong();
 		getDataFromStream(stream, function(data2) {
-			console.time('crossfade')
+			var originalDataBuffer = new Buffer(data2.length);
+			data2.copy(originalDataBuffer);
+			self.originalData = originalDataBuffer;
 			crossfade(data2, self.data, config.crossfade);
-			console.timeEnd('crossfade')
 			self.streamer.preapare(data2, function() {
 				self.data = data2;
 			});
@@ -37,6 +39,7 @@ Player.prototype.start = function() {
 	var stream = self.getNextSong();
 	getDataFromStream(stream, function(data) {
 		self.data = data;
+		self.originalData = self.data;
 		self.streamer.preapare(self.data, function() {
 			this.start();
 		});
@@ -86,7 +89,6 @@ var crossfade = function(pcm1, pcm2, seconds) {
 	}
 }
 
-
 var getDataFromStream = function(stream, done) {
 	var buffer = [];
 	stream.on('data', function(data) {
@@ -97,46 +99,33 @@ var getDataFromStream = function(stream, done) {
 	});
 }
 
+// Gets next sound and incements songIndex
 Player.prototype.getNextSong = function() {
-	var model = this.getNextSongModel();
-	if (undefined === this.currentSong) this.currentSong = model;
-	var stream = this.streamer.decode(model.path);
-	return stream;
-}
-
-Player.prototype.getNextSongModel = function() {
 	var file = this.files[this.songIndex]
 	this.songIndex++;
 	if (this.songIndex > this.files.length - 1) {
 		this.songIndex = 0;
 	}
-	return file;
-};
+	if (undefined === this.currentSong) this.currentSong = file;
+	this.nextSongModel = file;
+	var stream = this.streamer.decode(file.path);
+	return stream;
+}
+
+// Gets next sound file but wont incement songIndex
+Player.prototype.getSafeNextSong = function() {
+	return this.files[this.songIndex];
+}
 
 Player.prototype.next = function() {
-	this.streamer.next();
+	var self = this;
+	this.streamer.preapare(self.originalData, function() {
+		self.streamer.next();
+	});
 }
 
 Player.prototype.stop = function() {
 	this.streamer.stop();
-}
-
-Player.prototype.prev = function() {
-	var self = this;
-	/* If song starts, next on is loaded right away
-	 * -1 is next song, -2 is current song, -3 is previous song
-	 */
-	self.songIndex = self.songIndex - 3;
-	if (self.songIndex < 0) self.songIndex = self.songIndex + self.files.length;
-	var stream = self.getNextSong();
-	getDataFromStream(stream, function(data) {
-		self.data = data;
-		self.streamer.preapare(self.data, function() {
-			this.next();
-		});
-	});
-	// Because async
-	return this.nextSongModel;
 }
 
 module.exports = Player;

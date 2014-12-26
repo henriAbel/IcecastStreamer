@@ -1,0 +1,19 @@
+<div class="dashboard">
+	<div class="left-column">
+		<div class="listeners-container">
+			<h3 id="listeners-header">Listeners: {{listenerCount}}</h3>
+			<canvas id="listeners"></canvas>
+		</div>
+	</div>
+	<hr class="visible-xs-block" />
+	<div class="right-column">
+		<div class="playing">
+			<span>Now playing: </span>
+			<h3>{{$root.currentSong}}</h3>
+			<hr />
+			<span class="coming-up">Coming up: </span>
+			<h4 class="coming-up">{{$root.nextSong}}</h4>
+		</div>
+	</div>
+
+</div>

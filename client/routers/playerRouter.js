@@ -4,18 +4,25 @@ var server = require('server/index.js');
 
 var playerRouter = express.Router({mergeParams: true});
 
+var getSongData = function() {
+	var s = server.getInstance().player;
+	return {
+		current_song: s.currentSong,
+		coming_up: s.getSafeNextSong()
+	}
+}
+
 playerRouter.route('/current_song/').get(function (request, response) {
-	response.json(server.getInstance().player.currentSong);
+	response.json(getSongData());
 });
 
 playerRouter.route('/next/').get(function (request, response) {
 	server.getInstance().player.next();
-	response.json(server.getInstance().player.currentSong);
+	response.json(getSongData());
 });
 
-playerRouter.route('/prev/').get(function (request, response) {
-	var prevSong = server.getInstance().player.prev();
-	response.json(prevSong);
+playerRouter.route('/listeners/').get(function (request, response) {
+	response.json(server.getInstance().listeners);
 });
 
 module.exports = playerRouter;
