@@ -114,7 +114,7 @@ Player.prototype.getNextSong = function() {
 
 // Gets next sound file but wont incement songIndex
 Player.prototype.getSafeNextSong = function() {
-	return this.files[this.songIndex];
+	return this.files[this.songIndex -1];
 }
 
 Player.prototype.next = function() {
