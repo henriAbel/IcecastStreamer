@@ -24,7 +24,7 @@ var Icecast = function() {
 	if (type == 'mp3') {
 		this.type = 'audio/mpeg';
 		var stream = require('audio/mpeg');
-		this.streamer = new stream(this.connection);
+		this.streamer = new stream();
 	}
 	else {
 		// Encoder not found
@@ -40,7 +40,7 @@ Icecast.prototype.onMessage = function(message) {
 	var msg = message.toString().trim();
 	var self = this;
 	if (msg == 'HTTP/1.0 200 OK') {
-		this.player = new player(this.streamer);
+		this.player = new player(this.streamer, this.connection);
 		this.player.on('songChange', function(song) {
 			song.getMetadata(function(data) {
 				self.sendMeta(data);

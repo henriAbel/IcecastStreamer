@@ -7,29 +7,39 @@ var events = require('events');
 var metadata = require('ffmetadata');
 var audioFile = require('./audioFile');
 
-var Player = function(streamer) {
+// in ms
+var streamBuffer = 1000;
+
+var Player = function(streamer, connection) {
 	this.streamer = streamer;
+	this.connection = connection;
 	events.EventEmitter.call(this);
 	var self = this;
 	self.songIndex = 0;
 	self.files = getAudioFiles('.mp3', 0, config.musicDir);
 	logger.debug(util.format('Found %s files in: %s', self.files.length, config.musicDir));
 	this.currentSong = '';
-	this.streamer.on('songStart', function() {
+	this.on('songStart', function() {
 		self.currentSong = self.nextSongModel;
 		self.emit('songChange', self.currentSong);
 		var stream = self.getNextSong();
-		getDataFromStream(stream, function(data2) {
-			var originalDataBuffer = new Buffer(data2.length);
-			data2.copy(originalDataBuffer);
-			self.originalData = originalDataBuffer;
-			crossfade(data2, self.data, config.crossfade);
-			self.streamer.preapare(data2, function() {
-				self.data = data2;
-			});
+		getDataFromStream(stream, function(nextSongCrossfaded) {
+			// Fastest way to clone buffer
+			var originalDataBuffer = new Buffer(nextSongCrossfaded.length);
+			nextSongCrossfaded.copy(originalDataBuffer);
+			// Just set variable. If next is called before songEnd event, this data is used 
+			self.nextSongData = self.originalDataBuffer;
+			// Crossfade current track with next one
+			crossfade(nextSongCrossfaded, self.currentSongData, config.crossfade);
+			self.nextSongCrossfaded = nextSongCrossfaded;
+			
 		});
 	})
-	this.playing = false;
+	
+	this.on('songEnd', function() {
+		self.nextSongData = self.nextSongCrossfaded;
+		self.next();
+	});
 }
 
 Player.prototype.__proto__ = events.EventEmitter.prototype;
@@ -38,11 +48,15 @@ Player.prototype.start = function() {
 	var self = this;
 	var stream = self.getNextSong();
 	getDataFromStream(stream, function(data) {
-		self.data = data;
-		self.originalData = self.data;
-		self.streamer.preapare(self.data, function() {
-			this.start();
-		});
+		self.nextSongData = data;
+
+		this.start = Date.now();
+		if (undefined === self.byteData) {
+			self.next();
+		}
+		this.interval = setInterval(function() {
+			self.sendData();
+		}, 900);
 	});
 };
 
@@ -89,6 +103,13 @@ var crossfade = function(pcm1, pcm2, seconds) {
 	}
 }
 
+var getCrossFadeOffset = function() {
+	var seconds = config.crossfade;
+	if (!isNaN(seconds)) {
+		return seconds * 44100 * 2 * 2;
+	}
+}
+
 var getDataFromStream = function(stream, done) {
 	var buffer = [];
 	stream.on('data', function(data) {
@@ -97,6 +118,50 @@ var getDataFromStream = function(stream, done) {
 	stream.on('end', function() {
 		done(Buffer.concat(buffer));
 	});
+}
+
+/*
+16 bit pcm
+44 100 sampling rate
+2 channels
+*/
+Player.prototype.sendData = function() {
+	var now = Date.now() + 800
+	var timeSinceLastSendms = now - this.start;
+	var end = false;
+	logger.debug('needToSend: ' + timeSinceLastSendms);
+
+	var bytesToSend = Math.ceil(timeSinceLastSendms * 44.1 * 2) * 2;
+
+	if (bytesToSend + this.byteOffset > this.currentSongData.length -1 - getCrossFadeOffset()) {
+		var limitedBytesToSend = this.currentSongData.length - getCrossFadeOffset() - this.byteOffset;
+		var timeSync = limitedBytesToSend / bytesToSend;
+		bytesToSend = limitedBytesToSend;
+		this.start = this.start + ((now - this.start) * timeSync);
+		end = true;
+	}
+
+	var tmpBuffer = new Buffer(bytesToSend);
+	this.currentSongData.copy(tmpBuffer, 0, this.byteOffset, (this.byteOffset + bytesToSend));
+
+	this.byteOffset += bytesToSend;
+	if (undefined === this.encoder) {
+		this.encoder = this.streamer.getEncoderInstance();
+		this.encoder.pipe(this.connection, {end: false});
+	}
+
+	else if (!this.halfDoneSend && this.byteOffset > this.currentSongData.length / 2) {
+		this.emit('halfDone');
+		this.halfDoneSend = true;
+	}
+
+	this.encoder.write(tmpBuffer);
+	if (end) {
+		this.emit('songEnd');
+	}
+	else {
+		this.start = now;
+	}
 }
 
 // Gets next sound and incements songIndex
@@ -119,9 +184,12 @@ Player.prototype.getSafeNextSong = function() {
 
 Player.prototype.next = function() {
 	var self = this;
-	this.streamer.preapare(self.originalData, function() {
-		self.streamer.next();
-	});
+
+	this.currentSongData = this.nextSongData;
+	this.byteOffset = 0;
+	this.start = Date.now();
+	this.halfDoneSend = false;
+	this.emit('songStart');
 }
 
 Player.prototype.stop = function() {
