@@ -1,12 +1,11 @@
 var logger = require('logger');
 var metadata = require('ffmetadata');
 var util = require('util');
+var crypto = require('crypto');
 
-var i = 0;
 var AudioFile = function(path) {
 	var self = this;
-	self.id = i;
-	i++;
+	self.id = crypto.createHash('md5').update(path).digest('hex');
 	self.path = path;
 	self.metadata = {};
 	self.metadataCallback = [];

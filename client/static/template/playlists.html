@@ -1,0 +1,18 @@
+<div class="panel panel-default" ng-repeat="playlist in playlists">
+	<div class="panel-heading clearfix">
+		<h3 class="pull-left">{{ playlist.name }}</h3>
+		<span class="playlist-file-count">({{ playlist.files.length }})</span>
+		<button class="btn btn-primary pull-right" ng-click="save(playlist)" ng-class="{disabled: new}">Save</button>
+	</div>
+	<div class="panel-body">
+		<ul class="list-group" ui-sortable="attrs" ng-model="playlist.files">
+			<li modify-song="song" class="list-group-item playlist-item" ng-repeat="song in playlist.files">
+				<span class="playlist-index">{{ $index +1}}</span>
+				<span>{{ song.metadata.artist }}</span>
+				<span ng-show="song.metadata.artist && song.metadata.title"> - </span>
+				<span>{{ song.metadata.title }}</span>
+				<span ng-hide="song.metadata.artist || song.metadata.title">{{ song.path }}</span>
+			</li>
+		</ul>
+	</div>
+</div>

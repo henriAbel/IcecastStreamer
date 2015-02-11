@@ -40,3 +40,21 @@
 .coming-up {
 	color: #aaa;
 }
+
+.playlist-item {
+	cursor: pointer;
+}
+
+.playlist-index {
+	padding-right: 10px;
+}
+
+.panel-heading h3 {
+	margin: 0;
+}
+
+.playlist-file-count {
+	margin-top: 3px;
+	display: inline-block;
+	margin-left: 7px;	
+}

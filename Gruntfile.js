@@ -6,7 +6,7 @@ var conf = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-watch');
 
-	var jsFiles = ['client/static/js/*.js', 'client/static/js/provider/*.js', 'client/static/js/controller/*.js'];
+	var jsFiles = ['client/static/js/*.js', 'client/static/js/provider/*.js', 'client/static/js/directive/*.js', 'client/static/js/controller/*.js'];
 	var bowerRoot = 'client/static/bower_dependencies/';
 	var distPath = 'client/static/dist/';
 

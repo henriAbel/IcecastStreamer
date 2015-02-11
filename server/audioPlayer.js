@@ -1,34 +1,32 @@
 var logger = require('logger');
 var config = require('config/config');
-var fs = require('fs');
-var path = require('path');
 var util = require('util');
 var events = require('events');
 var metadata = require('ffmetadata');
 var audioFile = require('./audioFile');
+var playlistManager = require('./playlist');
 
 // in ms
 var streamBuffer = 1000;
 
-var Player = function(streamer, connection) {
+var Player = function(streamer) {
 	this.streamer = streamer;
-	this.connection = connection;
+	this.connection = undefined;
+	this.idle = true;
 	events.EventEmitter.call(this);
 	var self = this;
-	self.songIndex = 0;
-	self.files = getAudioFiles('.mp3', 0, config.musicDir);
-	logger.debug(util.format('Found %s files in: %s', self.files.length, config.musicDir));
-	this.currentSong = '';
+	self.playlistManager = new playlistManager();
+	this.currentSong;
 	this.on('songStart', function() {
 		self.currentSong = self.nextSongModel;
 		self.emit('songChange', self.currentSong);
-		var stream = self.getNextSong();
+		var stream = self.nextSong();
 		getDataFromStream(stream, function(nextSongCrossfaded) {
 			// Fastest way to clone buffer
 			var originalDataBuffer = new Buffer(nextSongCrossfaded.length);
 			nextSongCrossfaded.copy(originalDataBuffer);
 			// Just set variable. If next is called before songEnd event, this data is used 
-			self.nextSongData = self.originalDataBuffer;
+			self.nextSongData = originalDataBuffer;
 			// Crossfade current track with next one
 			crossfade(nextSongCrossfaded, self.currentSongData, config.crossfade);
 			self.nextSongCrossfaded = nextSongCrossfaded;
@@ -46,37 +44,18 @@ Player.prototype.__proto__ = events.EventEmitter.prototype;
 
 Player.prototype.start = function() {
 	var self = this;
-	var stream = self.getNextSong();
+	var stream = self.nextSong();
+	this.idle = false;
 	getDataFromStream(stream, function(data) {
 		self.nextSongData = data;
 
 		this.start = Date.now();
-		if (undefined === self.byteData) {
-			self.next();
-		}
+		self.next();
 		this.interval = setInterval(function() {
 			self.sendData();
 		}, 900);
 	});
 };
-
-var getAudioFiles = function(type, depth, filePaths) {
-	var audioFiles = [];
-	filePaths.forEach(function(filePath) {
-		var files = fs.readdirSync(filePath);
-		files.forEach(function(fileName) {
-			if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
-				if (depth < 2) {
-					audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, [path.join(filePath, fileName)]));
-				}
-			}
-			else if (path.extname(fileName) == '.mp3') {
-				audioFiles.push(new audioFile(path.join(filePath, fileName)));
-			}
-		})
-	});
-	return audioFiles;
-}
 
 /*
 16 bit pcm
@@ -149,7 +128,6 @@ Player.prototype.sendData = function() {
 		this.encoder = this.streamer.getEncoderInstance();
 		this.encoder.pipe(this.connection, {end: false});
 	}
-
 	else if (!this.halfDoneSend && this.byteOffset > this.currentSongData.length / 2) {
 		this.emit('halfDone');
 		this.halfDoneSend = true;
@@ -165,26 +143,15 @@ Player.prototype.sendData = function() {
 }
 
 // Gets next sound and incements songIndex
-Player.prototype.getNextSong = function() {
-	var file = this.files[this.songIndex]
-	this.songIndex++;
-	if (this.songIndex > this.files.length - 1) {
-		this.songIndex = 0;
-	}
+Player.prototype.nextSong = function() {
+	var file = this.playlistManager.getNextSong(true);
 	if (undefined === this.currentSong) this.currentSong = file;
 	this.nextSongModel = file;
 	var stream = this.streamer.decode(file.path);
 	return stream;
 }
 
-// Gets next sound file but wont incement songIndex
-Player.prototype.getSafeNextSong = function() {
-	return this.files[this.songIndex -1];
-}
-
 Player.prototype.next = function() {
-	var self = this;
-
 	this.currentSongData = this.nextSongData;
 	this.byteOffset = 0;
 	this.start = Date.now();
@@ -193,7 +160,8 @@ Player.prototype.next = function() {
 }
 
 Player.prototype.stop = function() {
-	this.streamer.stop();
+	this.idle = true;
+	clearInterval(this.interval);
 }
 
 module.exports = Player;

@@ -9,14 +9,6 @@ var parseString = require('xml2js').parseString;
 var Icecast = function() {
 	var self = this;
 	self.listeners = {};
-	var client = net.connect({port: config.icecast.port, host: config.icecast.host}, function() {
-		self.onConnect();
-	});
-	client.on('data', function(message) {
-		self.onMessage(message);
-	});
-	client.on('end', this.onClose);
-	this.connection = client;
 	this.password = new Buffer('source:' + config.icecast.password).toString('base64');
 	var name = config.icecast.name;
 	var type = config.icecast.encoder;
@@ -27,32 +19,36 @@ var Icecast = function() {
 		this.streamer = new stream();
 	}
 	else {
+		var errorMsg = 'Encoder not found!! Exiting';
 		// Encoder not found
+		logger.error(errorMsg);
+		console.log(errorMsg);
 		process.exit(1);
 	}
+	this.player = new player(this.streamer);
+	this.player.on('songChange', function(song) {
+		song.getMetadata(function(data) {
+			self.sendMeta(data);
+		});
+	});
+	this.connection = self.createConnection();
 
-	if (name.indexOf('/') != 0) name = '/' + name;
+	if (name.indexOf('/') !== 0) name = '/' + name;
 	this.name = name;
-
-}
+};
 
 Icecast.prototype.onMessage = function(message) {
 	var msg = message.toString().trim();
 	var self = this;
 	if (msg == 'HTTP/1.0 200 OK') {
-		this.player = new player(this.streamer, this.connection);
-		this.player.on('songChange', function(song) {
-			song.getMetadata(function(data) {
-				self.sendMeta(data);
-			})
-		});
+		this.player.connection = this.connection;	
 		this.player.start();
 		this.intervalId = setInterval(function() {
 			self.updateListeners();
 		}, 10000);
 		this.updateListeners();
 	}
-}
+};
 
 Icecast.prototype.sendMeta = function(metadata) {
 	var songName = util.format('%s - %s', metadata.artist, metadata.title);
@@ -64,7 +60,7 @@ Icecast.prototype.sendMeta = function(metadata) {
 		headers: {'Authorization': 'Basic ' + this.password}
 	};
 	http.request(options).end();
-}
+};
 
 Icecast.prototype.updateListeners = function() {
 	var self = this;
@@ -85,12 +81,33 @@ Icecast.prototype.updateListeners = function() {
 
 Icecast.prototype.onClose = function() {
 	logger.debug('Connection closed');
-}
+	if (!this.player.idle) {
+		this.player.stop();
+		this.connection = this.createConnection();
+	}
+};
 
 Icecast.prototype.onConnect = function() {
 	this.connection.write(util.format('SOURCE %s ICE/1.0\r\ncontent-type: %s\r\nAuthorization: Basic %s\r\n  \
 		\r\n ice-description: %s\r\nice-audio-info: ice-samplerate=44100;ice-bitrate=Quality 4;ice-channels=2\r\n\r\n',
 		this.name, this.type, this.password, config.icecast.description));
+};
+
+Icecast.prototype.createConnection = function() {
+	var self = this;
+	var client = net.connect({port: config.icecast.port, host: config.icecast.host}, function() {
+		self.onConnect();
+	});
+	client.on('data', function(message) {
+		self.onMessage(message);
+	});
+	client.on('end', function() {
+		self.onClose();
+	});
+	client.on('error', function(error) {
+		logger.debug(error);
+	});
+	return client;
 };
 
 module.exports = Icecast;

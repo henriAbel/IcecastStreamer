@@ -8,9 +8,9 @@ var getSongData = function() {
 	var s = server.getInstance().player;
 	return {
 		current_song: s.currentSong,
-		coming_up: s.getSafeNextSong()
-	}
-}
+		coming_up: s.playlistManager.getNextSong2()
+	};
+};
 
 playerRouter.route('/current_song/').get(function (request, response) {
 	response.json(getSongData());

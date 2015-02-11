@@ -1,0 +1,29 @@
+<h3>List of songs</h3>
+<div class="form-inline">
+	<div class="form-group">
+		<input type="text" class="form-control" ng-model="search" placeholder="Search song" />
+	</div>
+	<div class="form-group">
+		<button type="button" class="btn btn-default" ng-click="search = ''">Clear</button>
+	</div>
+</div>
+<hr />
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th>Artist</th>
+			<th>Title</th>
+			<th class="hidden-xs">Path</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tr ng-class="" ng-repeat="song in songs | filter:search as results">
+		<td><span>{{song.metadata.artist}}</span></td>
+		<td><span>{{song.metadata.title}}</span></td>
+		<td class="hidden-xs"><span>{{song.path}}</span></td>
+		<td><button type="button" class="btn btn-primary" modify-song="song">Modify</button></td>
+	</tr>
+	<tr class="no-results" ng-show="results.length == 0">
+		<td colspan="4"><h4>No reults found!</h4></td>
+	</tr>
+</table>
