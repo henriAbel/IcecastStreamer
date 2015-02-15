@@ -14,17 +14,23 @@ var AudioFile = function(path) {
 
 AudioFile.prototype.readMetadata = function() {
 	var self = this;
-	metadata.read(self.path, function(err, data) {
-		if (!err) {
-			self.metadata = data;
-			if (self.metadataCallback.length > 0) {
-				self.metadataCallback.forEach(function(callback) {
-					callback.call(self, data);
-				});
-				self.metadataCallback = [];
+	try {
+		metadata.read(self.path, function(err, data) {
+			if (!err) {
+				self.metadata = data;
+				if (self.metadataCallback.length > 0) {
+					self.metadataCallback.forEach(function(callback) {
+						callback.call(self, data);
+					});
+					self.metadataCallback = [];
+				}
 			}
-		}
-	});
+		});	
+	}
+	catch (e) {
+		// TODO remove file from playlist
+	}
+	
 }
 
 AudioFile.prototype.updateMetadata = function(data) {

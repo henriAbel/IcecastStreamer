@@ -10,7 +10,34 @@ playlistRouter.route('/').get(function (request, response) {
 playlistRouter.route('/:id').put(function (request, response) {
 	var id = request.params.id;
 	var paths = request.body;
-	server.getInstance().player.playlistManager.update(id, paths);
+	server.getInstance().player.playlistManager.updatePlaylist(id, paths);
+
+	response.status(200);
+	response.send('Updated');
+});
+
+playlistRouter.route('/:id/queue').post(function (request, response) {
+	var id = request.params.id;
+	var mode = request.body.mode;
+	var playlistManager = server.getInstance().player.playlistManager;
+	var result;
+	console.log(id)
+	console.log(mode);
+	if (mode == 0) {
+		result = playlistManager.emptyAdd(id);
+	}
+	else if (mode == 1) {
+		result = playlistManager.addToEnd(id);
+	}
+	else if (mode == 2) {
+		result = playlistManager.addAfterCurrent(id);
+	}
+	
+	if (undefined === result) {
+		result = {error: true, message: 'API error! Unknown mode'};
+	}
+	response.status(result.error ? 400 : 200);
+	response.json(result);
 });
 
 module.exports = playlistRouter;

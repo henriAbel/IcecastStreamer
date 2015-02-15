@@ -7,8 +7,9 @@ var playerRouter = express.Router({mergeParams: true});
 var getSongData = function() {
 	var s = server.getInstance().player;
 	return {
-		current_song: s.currentSong,
-		coming_up: s.playlistManager.getNextSong2()
+		current_song: s.playlistManager.dequeue[1],
+		coming_up: s.playlistManager.dequeue[0],
+		position: s.getPosition()
 	};
 };
 

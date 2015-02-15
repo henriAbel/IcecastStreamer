@@ -16,6 +16,11 @@ var Player = function(streamer) {
 	events.EventEmitter.call(this);
 	var self = this;
 	self.playlistManager = new playlistManager();
+	self.playlistManager.on('stop', function() {
+		logger.debug('Audioplayer has been stopped');
+		self.stop();
+		this.emit('stop');
+	});
 	this.currentSong;
 	this.on('songStart', function() {
 		self.currentSong = self.nextSongModel;
@@ -111,7 +116,6 @@ Player.prototype.sendData = function() {
 	logger.debug('needToSend: ' + timeSinceLastSendms);
 
 	var bytesToSend = Math.ceil(timeSinceLastSendms * 44.1 * 2) * 2;
-
 	if (bytesToSend + this.byteOffset > this.currentSongData.length -1 - getCrossFadeOffset()) {
 		var limitedBytesToSend = this.currentSongData.length - getCrossFadeOffset() - this.byteOffset;
 		var timeSync = limitedBytesToSend / bytesToSend;
@@ -144,7 +148,7 @@ Player.prototype.sendData = function() {
 
 // Gets next sound and incements songIndex
 Player.prototype.nextSong = function() {
-	var file = this.playlistManager.getNextSong(true);
+	var file = this.playlistManager.getNextSong();
 	if (undefined === this.currentSong) this.currentSong = file;
 	this.nextSongModel = file;
 	var stream = this.streamer.decode(file.path);
@@ -153,6 +157,7 @@ Player.prototype.nextSong = function() {
 
 Player.prototype.next = function() {
 	this.currentSongData = this.nextSongData;
+	this.songLength = this.currentSongData.length / 141120;
 	this.byteOffset = 0;
 	this.start = Date.now();
 	this.halfDoneSend = false;
@@ -163,5 +168,12 @@ Player.prototype.stop = function() {
 	this.idle = true;
 	clearInterval(this.interval);
 }
+
+Player.prototype.getPosition = function() {
+	return {
+		position: this.byteOffset / 141120,
+		length: this.songLength
+	}
+};
 
 module.exports = Player;

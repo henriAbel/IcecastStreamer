@@ -9,9 +9,10 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
 	<link rel="stylesheet" href="static/css/main.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="static/bower_dependencies/ngtoast/dist/ngToast.min.css">
 </head>
 <body>
-
+	<toast></toast>
 	<nav class="navbar navbar-default navbar-fixed-top navbar-inverse" ng-controller="HeaderController">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -27,6 +28,9 @@
 					<li ng-class="{ active: isActive('/home/')}">
 						<a href="/home"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> Index</a>
 					</li>
+					<li ng-class="{ active: isActive('/queue/')}">
+						<a href="/queue"><span class="glyphicon glyphicon-stats" aria-hidden="true"></span> Queue</a>
+					</li>
 					<li ng-class="{ active: isActive('/music/')}">
 						<a href="/music"><span class="glyphicon glyphicon-music" aria-hidden="true"></span> Music</a>
 					</li>
@@ -34,7 +38,7 @@
 						<a href="/playlist"><span class="glyphicon glyphicon-list" aria-hidden="true"></span> Playlists</a>
 					</li>
 					<li class="audio-control">
-						<a>{{currentSong}}</a>
+						<a>{{$root.currentSong}}</a>
 						<a ng-click="next()"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span></a>
 					</li>
 				</ul>

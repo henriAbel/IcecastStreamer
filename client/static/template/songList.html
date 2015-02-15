@@ -21,7 +21,18 @@
 		<td><span>{{song.metadata.artist}}</span></td>
 		<td><span>{{song.metadata.title}}</span></td>
 		<td class="hidden-xs"><span>{{song.path}}</span></td>
-		<td><button type="button" class="btn btn-primary" modify-song="song">Modify</button></td>
+		<td>
+			<div class="dropdown">
+		  		<a id="dLabel" class="dropdown-toggle" data-target="#" id="dLabel" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Actions
+					<span class="caret"></span>
+		  		</a>
+		  		<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+					<li><a href="javascript: void(0)" type="button" modify-song="song">Modify</a></li>
+					<li><a href="javascript: void(0)" type="button" ng-click="add(song)">Add to queue</a></li>
+				</ul>
+			</div>
+		</td>
 	</tr>
 	<tr class="no-results" ng-show="results.length == 0">
 		<td colspan="4"><h4>No reults found!</h4></td>

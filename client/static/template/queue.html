@@ -1,0 +1,18 @@
+<ul class="list-group">
+	<li class="list-group-item playlist-item">
+		<span ng-style="{'width': position + '%'}" class="song-100 song-position"></span>
+		<span class="song-100 song-position-detail">{{rawPosition.position | number: 0}}s / {{rawPosition.length | number: 0}}s</span>
+		<span>{{$root.currentSong}}</span>
+	</li>
+	<li class="list-group-item playlist-item">{{$root.nextSong}}</li>
+</ul>
+
+<ul class="list-group" ui-sortable="attrs" ng-model="files">
+	<li modify-song="song" class="list-group-item playlist-item" ng-repeat="song in files">
+		<span class="playlist-index">{{ $index +1}}</span>
+		<span>{{ song.metadata.artist }}</span>
+		<span ng-show="song.metadata.artist && song.metadata.title"> - </span>
+		<span>{{ song.metadata.title }}</span>
+		<span ng-hide="song.metadata.artist || song.metadata.title">{{ song.path }}</span>
+	</li>
+</ul>

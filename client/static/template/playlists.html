@@ -2,6 +2,14 @@
 	<div class="panel-heading clearfix">
 		<h3 class="pull-left">{{ playlist.name }}</h3>
 		<span class="playlist-file-count">({{ playlist.files.length }})</span>
+		<button class="btn btn-primary pull-right" ng-click="add(playlist, mode)">Add to queue</button>
+		<div class="col-md-4 pull-right">
+			<select ng-init="mode = 0" ng-model="mode" class="form-control">
+				<option value="0">Empty queue and add play soon as possible</option>
+				<option value="1">Add to end of queue</option>
+				<option value="1">Add after current playlist</option>
+			</select>
+		</div>
 		<button class="btn btn-primary pull-right" ng-click="save(playlist)" ng-class="{disabled: new}">Save</button>
 	</div>
 	<div class="panel-body">

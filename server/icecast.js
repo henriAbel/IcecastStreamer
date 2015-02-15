@@ -31,6 +31,10 @@ var Icecast = function() {
 			self.sendMeta(data);
 		});
 	});
+	this.player.on('stop', function() {
+		logger.debug('Icecast has been stopped');
+		this.connection.close();
+	});
 	this.connection = self.createConnection();
 
 	if (name.indexOf('/') !== 0) name = '/' + name;

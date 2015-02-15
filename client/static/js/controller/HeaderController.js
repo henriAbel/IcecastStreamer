@@ -7,18 +7,21 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'Player
 	};
 
 	var updateCurrentSong = function(data) {
-		var songTitle = data.current_song.metadata.artist + ' - ' + data.current_song.metadata.title;
-		var nextSongTitle = data.coming_up.metadata.artist + ' - ' + data.coming_up.metadata.title;
-		$scope.currentSong = songTitle;
-		$rootScope.currentSong = songTitle;
-		$rootScope.nextSong = nextSongTitle;
+		var songTitle = dataToTitle(data.current_song);
+		var nextSongTitle = dataToTitle(data.coming_up);
+		if ($rootScope.currentSong != songTitle && $rootScope.nextSong != nextSongTitle) {
+			$rootScope.currentSong = songTitle;
+			$rootScope.nextSong = nextSongTitle;
+			$rootScope.position = data.position;
+			$rootScope.$emit('songChanged');
+		}
 	};
 
 	var getCurrentSong = function() {
 		PlayerProvider.current_song(function(data) {
 			updateCurrentSong(data);
 		});
-	}
+	};
 
 	var resetInterval = function() {
 		if (undefined !== intervalId) {
@@ -26,7 +29,7 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'Player
 		}
 
 		intervalId = setInterval(getCurrentSong, 10000);
-	}
+	};
 
 	resetInterval();
 	getCurrentSong();
@@ -35,6 +38,16 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'Player
 		PlayerProvider.next(function(nextSong) {
 			updateCurrentSong(nextSong);
 		});
-	}
+	};
+
+	var dataToTitle = function(data) {
+		var artist = data.metadata.artist || '';
+		var title = data.metadata.title || '';
+		seperator = (artist.length > 0 && title.length > 0) ? ' - ' : '';
+		if (seperator.length > 0) {
+			return artist + seperator + title;
+		}
+		return data.path;
+	};
 
 }]);
