@@ -6,7 +6,7 @@ app.directive('modifySong', ['$modal', function($modal) {
 		link: function($scope, element, attrs) {
 			element.bind('click', function() {
 				var modal = $modal.open({
-					templateUrl: templateUrl + 'modifySong.html',
+					templateUrl: templateUrl + 'modifySong_modal.html',
 					controller: 'ModifySongController',
 					resolve: {
 						song: function () {

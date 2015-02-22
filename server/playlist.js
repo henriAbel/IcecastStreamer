@@ -60,8 +60,8 @@ var PlaylistManager = function() {
 				// Could be playlist
 				try {
 					var p = new Playlist(fileName);
-					p.load(filePath);
-					this.playlists.push(p);
+					p.load(self.dirname);
+					self.playlists.push(p);
 				}
 				catch (err) {
 					logger.error(util.format('Cannot load playlist from "%s"', filePath));
@@ -97,6 +97,18 @@ Playlist.prototype.load = function(dirname) {
 Playlist.prototype.hasNext = function(index) {
 	return this.paths.length -1 > index;
 };
+
+PlaylistManager.prototype.addSong = function(songHash, playlistId) {
+	var song = this._getSongFromHash(songHash);
+	var playlist = this._getPlaylistFromId(playlistId);
+	if (playlist.paths.indexOf(song.path) >= 0) return {
+		error: true,
+		message: 'Song already in playlist'
+	}
+	playlist.paths.push(song.path);
+	playlist.save(this.dirname);
+	return {error: false}
+}
 
 PlaylistManager.prototype.getNextSong = function() {
 	var song = this.queue.shift();
@@ -140,7 +152,7 @@ PlaylistManager.prototype._nextSong = function() {
 		}
 		playlistQueue.shift();
 		this.currentSongIndex = 0;
-		return this.getNextSong();
+		return this._nextSong();
 	}
 	return this._getSongFromPath(nextSong);
 };
@@ -154,22 +166,26 @@ PlaylistManager.prototype._getSongFromPath = function(path) {
 	return undefined;
 };
 
-// Build array element for each playlist with audioFiles
-PlaylistManager.prototype.compile = function() {
+/*  Build array element for each playlist with audioFiles
+	If name is provided, only playlists with matching names are used
+*/
+PlaylistManager.prototype.compile = function(name) {
 	var playlists = [];
 	var self = this;
 	this.playlists.forEach(function(playlist) {
-		var files = [];
-		playlist.paths.forEach(function(path) {
-			var e = self._getSongFromPath(path);
-			if (e !== undefined) files.push(e);
-		});
-		playlists.push({
-			name: playlist.name,
-			locked: playlist.locked,
-			id: playlist.id,
-			files: files
-		});
+		if (name === undefined || playlist.name == name) {
+			var files = [];
+			playlist.paths.forEach(function(path) {
+				var e = self._getSongFromPath(path);
+				if (e !== undefined) files.push(e);
+			});
+			playlists.push({
+				name: playlist.name,
+				locked: playlist.locked,
+				id: playlist.id,
+				files: files
+			});
+		}
 	});
 	return playlists;
 };
@@ -226,7 +242,8 @@ PlaylistManager.prototype.emptyAdd = function(playlistId) {
 		error: true,
 		message: 'Playlist not found'
 	};
-	this.currentSongIndex = 0;
+	this.currentSongIndex = -1;
+	playlistQueue = [];
 	playlistQueue.push(playlist);
 	this.updateQueue();
 	return {
@@ -282,6 +299,22 @@ PlaylistManager.prototype.addSongToEnd = function(songId) {
 	return {
 		error: false
 	};
+};
+
+PlaylistManager.prototype.newPlaylist = function(name) {
+	for (var i = this.playlists.length - 1; i >= 0; i--) {
+		var e = this.playlists[i];
+		if (e.name == name) {
+			return {
+				error: true,
+				message: util.format('Playlist with name "%s" already exists', name)
+			}
+		}
+	};
+	var newList = new Playlist(name);
+	newList.save(this.dirname);
+	this.playlists.push(newList);
+	return this.compile(name)[0];
 };
 
 var getAudioFiles = function(type, depth, filePaths) {

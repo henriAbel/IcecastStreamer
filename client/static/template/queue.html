@@ -1,3 +1,6 @@
+<h2>Songs in buffer:</h2>
+<span>These songs are already in player buffer and cannot be reordered</span>
+<hr />
 <ul class="list-group">
 	<li class="list-group-item playlist-item">
 		<span ng-style="{'width': position + '%'}" class="song-100 song-position"></span>
@@ -7,6 +10,9 @@
 	<li class="list-group-item playlist-item">{{$root.nextSong}}</li>
 </ul>
 
+<h2>Queue:</h2>
+<span>You can reorder following songs by dragging them to desired location</span>
+<hr />
 <ul class="list-group" ui-sortable="attrs" ng-model="files">
 	<li modify-song="song" class="list-group-item playlist-item" ng-repeat="song in files">
 		<span class="playlist-index">{{ $index +1}}</span>

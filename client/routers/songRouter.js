@@ -35,4 +35,11 @@ songRouter.route('/:id/queue').post(function (request, response) {
 	response.json(result);
 });
 
+songRouter.route('/:id/playlist').post(function (request, response) {
+	var song = request.params.id;
+	var playlist = request.body.pid;
+	result = server.getInstance().player.playlistManager.addSong(song, playlist);
+	response.status(result.error ? 400 : 200);
+	response.json(result);
+});
 module.exports = songRouter;

@@ -7,6 +7,13 @@ playlistRouter.route('/').get(function (request, response) {
 	response.json(server.getInstance().player.playlistManager.compile());
 });
 
+playlistRouter.route('/').post(function (request, response) {
+	var name = request.body.name;
+	var result = server.getInstance().player.playlistManager.newPlaylist(name);
+	response.status(result.error ? 400 : 200);
+	response.json(result);
+});
+
 playlistRouter.route('/:id').put(function (request, response) {
 	var id = request.params.id;
 	var paths = request.body;
@@ -21,8 +28,6 @@ playlistRouter.route('/:id/queue').post(function (request, response) {
 	var mode = request.body.mode;
 	var playlistManager = server.getInstance().player.playlistManager;
 	var result;
-	console.log(id)
-	console.log(mode);
 	if (mode == 0) {
 		result = playlistManager.emptyAdd(id);
 	}

@@ -23,13 +23,21 @@
 		<td class="hidden-xs"><span>{{song.path}}</span></td>
 		<td>
 			<div class="dropdown">
-		  		<a id="dLabel" class="dropdown-toggle" data-target="#" id="dLabel" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<a id="dLabel" class="dropdown-toggle" data-target="#" id="dLabel" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 					Actions
 					<span class="caret"></span>
-		  		</a>
-		  		<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+				</a>
+				<ul class="dropdown-menu multi-level" role="menu" aria-labelledby="dLabel">
 					<li><a href="javascript: void(0)" type="button" modify-song="song">Modify</a></li>
 					<li><a href="javascript: void(0)" type="button" ng-click="add(song)">Add to queue</a></li>
+					<li class="dropdown-submenu pull-left">
+						<a href="javascript: void(0)">Add to playlist</a>
+						<ul class="dropdown-menu">
+							<li ng-repeat="playlist in playlists">
+								<a href="#" ng-click="toPlaylist(song, playlist)">{{ playlist.name }}</a>
+							</li>
+						</ul>
+					</li>
 				</ul>
 			</div>
 		</td>

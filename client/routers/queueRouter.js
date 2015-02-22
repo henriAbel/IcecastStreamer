@@ -4,7 +4,8 @@ var server = require('server/index.js');
 var queueRouter = express.Router({mergeParams: true});
 
 queueRouter.route('/').get(function (request, response) {
-	var queue = server.getInstance().player.playlistManager.queue;
+	var manager = server.getInstance().player.playlistManager;
+	var queue = manager.queue;
 	response.json(queue);
 });
 

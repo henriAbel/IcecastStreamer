@@ -8,6 +8,9 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 		}
 	};
 
+	/*
+	Saves current playlist
+	*/
 	$scope.save = function(playlist) {
 		var newOrder = [];
 		for (var i = 0; i < playlist.files.length; i++) {
@@ -20,6 +23,9 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 		console.log(newOrder);
 	};
 
+	/*
+	Adds playlist to queue
+	*/
 	$scope.add = function(playlist, mode) {
 		PlaylistProvider.queue({id: playlist.id, mode: parseInt(mode)}).$promise.then(function(response){
 			ngToast.create('Playlist added to queue');
@@ -30,4 +36,17 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 			});
 		});
 	};
+
+	$scope.newPlaylist = function() {
+		var modal = $modal.open({
+			templateUrl: templateUrl + 'newPlaylist_modal.html',
+			controller: 'NewPlaylistController',
+		});
+
+		modal.result.then(function(playlist) {
+			if (undefined !== playlist) {
+				$scope.playlists.push(playlist);	
+			}
+		});
+	}
 }]);

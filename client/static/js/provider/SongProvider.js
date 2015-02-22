@@ -13,6 +13,12 @@ app.provider('SongProvider', function() {
                 params: {
                     action: 'queue'
                 }
+            },
+            toPlaylist: {
+                method: 'POST',
+                params: {
+                    action: 'playlist'
+                }
             }
         });
 

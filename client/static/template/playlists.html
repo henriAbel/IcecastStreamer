@@ -1,3 +1,7 @@
+<div>
+	<button type="button" class="btn btn-default" ng-click="newPlaylist()">Create new playlist</button>	
+</div>
+
 <div class="panel panel-default" ng-repeat="playlist in playlists">
 	<div class="panel-heading clearfix">
 		<h3 class="pull-left">{{ playlist.name }}</h3>
@@ -7,7 +11,7 @@
 			<select ng-init="mode = 0" ng-model="mode" class="form-control">
 				<option value="0">Empty queue and add play soon as possible</option>
 				<option value="1">Add to end of queue</option>
-				<option value="1">Add after current playlist</option>
+				<option value="2">Add after current playlist</option>
 			</select>
 		</div>
 		<button class="btn btn-primary pull-right" ng-click="save(playlist)" ng-class="{disabled: new}">Save</button>
