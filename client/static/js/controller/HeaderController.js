@@ -35,9 +35,11 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'Player
 	getCurrentSong();
 
 	$scope.next = function() {
-		PlayerProvider.next(function(nextSong) {
-			updateCurrentSong(nextSong);
-		});
+		PlayerProvider.next().$promise.then(function(response) {
+			updateCurrentSong(response);
+		}, function(error) {
+			console.error(error);
+		})
 	};
 
 	var dataToTitle = function(data) {

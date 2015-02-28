@@ -6,11 +6,21 @@ var audioFile = require('./audioFile');
 var util = require('util');
 var events = require('events');
 
+/*
+	Holds AudioFile instances
+*/
 var allFiles = [];
 var playlistQueue = [];
+/*
+	Holds AudioFile instances
+*/
+var commercialQueue = [];
 var defaultPlaylistName = "All songs";
 var i = 0;
 var minQueueSize = 20;
+
+var commercialsEnabled, commercialFrequency, commercialsInRow;
+var songsWithCommercials = 0, songsWithoutCommercial = 0, commercialIndex = 0;
 
 var PlaylistManager = function() {
 	this.currentSongIndex = -1;
@@ -70,6 +80,21 @@ var PlaylistManager = function() {
 		}
 	});
 	this.updateQueue();
+	if (config.commerial.enable && undefined !== config.commerial.dir && undefined !== config.commerial.frequency) {
+		try {
+			commercialQueue = getAudioFiles('.mp3', 0, config.commerial.dir);	
+			commercialFrequency = config.commerial.frequency.split(':')[0];
+			commercialsInRow = config.commerial.frequency.split(':')[1];
+			if (commercialQueue.length > 0) {
+				logger.info(util.format('Found %s commercial(s)', commercialQueue.length));
+				commercialsEnabled = true;	
+			}
+		}
+		catch (err) {
+			commercialsEnabled = false;
+			logger.error(util.format('Cannot enable commercials: %s', err));
+		}
+	}
 };
 
 PlaylistManager.prototype.__proto__ = events.EventEmitter.prototype;
@@ -111,12 +136,32 @@ PlaylistManager.prototype.addSong = function(songHash, playlistId) {
 }
 
 PlaylistManager.prototype.getNextSong = function() {
-	var song = this.queue.shift();
+	var song;
+	if (commercialsEnabled && songsWithoutCommercial >= commercialFrequency) {
+		songsWithCommercials++;
+		if (songsWithCommercials >= commercialsInRow) {
+			songsWithCommercials = 0;
+			songsWithoutCommercial = 0;
+		}
+		if (commercialQueue.length > commercialIndex) {
+			song = commercialQueue[commercialIndex];
+			commercialIndex++;
+		}
+		else {
+			commercialIndex = 0;
+			song = commercialQueue[commercialIndex];
+		}
+	}
+	else {
+		song = this.queue.shift();
+		this.updateQueue();
+		songsWithoutCommercial++;
+	}
+
 	this.dequeue.unshift(song);
 	if (this.dequeue.length > 2) {
 		this.dequeue.pop();
 	}
-	this.updateQueue();
 	return song;
 };
 
