@@ -17,7 +17,7 @@
     "grunt-wiredep": "^2.0.0",
     "lame": "^1.1.1",
     "log4js": "~0.6.21",
-    "mp3-parser": "^0.2.4",
+    "mp3-parser": "^0.2.5",
     "xml2js": "^0.4.4",
     "grunt-cli": "~0.1.12"
   },

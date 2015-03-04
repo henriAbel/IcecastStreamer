@@ -368,7 +368,7 @@ var getAudioFiles = function(type, depth, filePaths) {
 		var files = fs.readdirSync(filePath);
 		files.forEach(function(fileName) {
 			if (fs.lstatSync(path.join(filePath, fileName)).isDirectory()) {
-				if (depth < 0) {
+				if (depth < 5) {
 					audioFiles = audioFiles.concat(getAudioFiles(type, depth +1, [path.join(filePath, fileName)]));
 				}
 			}
