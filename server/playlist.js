@@ -18,6 +18,7 @@ var commercialQueue = [];
 var defaultPlaylistName = "All songs";
 var i = 0;
 var minQueueSize = 20;
+var ignoreFiles = ['.gitignore'];
 
 var commercialsEnabled, commercialFrequency, commercialsInRow;
 var songsWithCommercials = 0, songsWithoutCommercial = 0, commercialIndex = 0;
@@ -64,7 +65,7 @@ var PlaylistManager = function() {
 	var files = fs.readdirSync(this.dirname);
 	files.forEach(function(fileName) {
 		// Default playlist is already created
-		if (fileName != defaultPlaylistName) {
+		if (fileName != defaultPlaylistName && ignoreFiles.indexOf(fileName) < 0) {
 			var filePath = path.join(self.dirname, fileName);
 			if (!fs.lstatSync(filePath).isDirectory()) {
 				// Could be playlist
@@ -129,11 +130,11 @@ PlaylistManager.prototype.addSong = function(songHash, playlistId) {
 	if (playlist.paths.indexOf(song.path) >= 0) return {
 		error: true,
 		message: 'Song already in playlist'
-	}
+	};
 	playlist.paths.push(song.path);
 	playlist.save(this.dirname);
-	return {error: false}
-}
+	return {error: false};
+};
 
 PlaylistManager.prototype.getNextSong = function() {
 	var song;
@@ -271,7 +272,7 @@ PlaylistManager.prototype.reorderQueue = function(newOrder) {
 	for (var i = 0; i < this.queue.length; i++) {
 		currentIds.push(this.queue[i].id);
 	}
-	for (var i = 0; i < newOrder.length ; i++) {
+	for (i = 0; i < newOrder.length ; i++) {
 		var e = newOrder[i];
 		if (currentIds.indexOf(e) >= 0) {
 			tmpQueue.push(this._getSongFromHash(e));	
@@ -316,7 +317,7 @@ PlaylistManager.prototype.addAfterCurrent = function(playlistId) {
 				message: 'Playlist already in queue'
 			};
 		}
-	};
+	}
 	playlistQueue.push(playlist);
 	return {
 		error: false
@@ -353,9 +354,9 @@ PlaylistManager.prototype.newPlaylist = function(name) {
 			return {
 				error: true,
 				message: util.format('Playlist with name "%s" already exists', name)
-			}
+			};
 		}
-	};
+	}
 	var newList = new Playlist(name);
 	newList.save(this.dirname);
 	this.playlists.push(newList);

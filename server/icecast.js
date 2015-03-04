@@ -55,7 +55,10 @@ Icecast.prototype.onMessage = function(message) {
 };
 
 Icecast.prototype.sendMeta = function(metadata) {
-	var songName = util.format('%s - %s', metadata.artist, metadata.title);
+	var songName = metadata.artist !== undefined && metadata.title !== undefined
+		? util.format('%s - %s', metadata.artist, metadata.title) 
+		: metadata.artist || metadata.title;
+
 	logger.debug(util.format('Send metadata: %s', songName));
 	var options = {
 		host: config.icecast.host,

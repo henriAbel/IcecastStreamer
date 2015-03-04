@@ -18,7 +18,7 @@ playerRouter.route('/current_song/').get(function (request, response) {
 });
 
 playerRouter.route('/next/').get(function (request, response) {
-	server.getInstance().player.next();
+	server.getInstance().player.softNext();
 	response.json(getSongData());
 });
 

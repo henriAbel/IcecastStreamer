@@ -10,7 +10,7 @@ var AudioFile = function(path) {
 	self.metadata = {};
 	self.metadataCallback = [];
 	self.readMetadata();
-}
+};
 
 AudioFile.prototype.readMetadata = function() {
 	var self = this;
@@ -18,26 +18,32 @@ AudioFile.prototype.readMetadata = function() {
 		metadata.read(self.path, function(err, data) {
 			if (!err) {
 				self.metadata = data;
-				if (self.metadataCallback.length > 0) {
-					self.metadataCallback.forEach(function(callback) {
-						callback.call(self, data);
-					});
-					self.metadataCallback = [];
-				}
+			}
+			else {
+				logger.debug(err);
 			}
 		});	
 	}
 	catch (e) {
-		// TODO remove file from playlist
+		logger.debug(e);
 	}
-	
-}
+	if (Object.keys(self.metadata).length === 0) {
+		self.metadata = {'title': 'Unknown song'};
+	}
+
+	if (self.metadataCallback.length > 0) {
+		self.metadataCallback.forEach(function(callback) {
+			callback.call(self, self.metadata);
+		});
+		self.metadataCallback = [];
+	}
+};
 
 AudioFile.prototype.updateMetadata = function(data) {
 	var self = this;
 	metadata.write(this.path, data, function(err) {
 		if (err) {
-			logger.debug("Error writing metadata", err)
+			logger.debug("Error writing metadata", err);
 		}
 		else {
 			logger.debug(util.format("Updated %s metadata %s", self.path, data));
