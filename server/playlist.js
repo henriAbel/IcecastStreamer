@@ -367,9 +367,9 @@ PlaylistManager.prototype.shuffle = function(playlistId) {
 	var playlist = this._getPlaylistFromId(playlistId);
 	if (playlist !== undefined) {
 		shuffle(playlist.paths);
+		playlist.save(this.dirname);
 		return playlist;
 	}
-	playlist.save(this.dirname);
 }
 
 // http://stackoverflow.com/a/6274398
