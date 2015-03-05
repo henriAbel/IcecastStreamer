@@ -13,6 +13,12 @@ app.provider('PlaylistProvider', function() {
                 params: {
                     action: 'queue'
                 }
+            },
+            shuffle: {
+                method: 'POST',
+                params: {
+                    action: 'shuffle'
+                }
             }
         });
 

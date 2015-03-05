@@ -17,10 +17,10 @@
 			<th></th>
 		</tr>
 	</thead>
-	<tr ng-class="" ng-repeat="song in songs | filter:search as results">
-		<td><span>{{song.metadata.artist}}</span></td>
-		<td><span>{{song.metadata.title}}</span></td>
-		<td class="hidden-xs"><span>{{song.path}}</span></td>
+	<tr ng-class="" ng-repeat="song in songs | filter:search | limitTo:songLimit as results">
+		<td><span>{{ song.metadata.artist }}</span></td>
+		<td><span>{{ song.metadata.title }}</span></td>
+		<td class="hidden-xs"><span>{{ song.path }}</span></td>
 		<td>
 			<div class="dropdown">
 				<a id="dLabel" class="dropdown-toggle" data-target="#" id="dLabel" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -44,5 +44,8 @@
 	</tr>
 	<tr class="no-results" ng-show="results.length == 0">
 		<td colspan="4"><h4>No reults found!</h4></td>
+	</tr>
+	<tr class="no-results" ng-hide="search.length > 0" ng-show="results.length < songs.length">
+		<td colspan="4"><button type="button" class="btn btn-default" ng-click="songLimit = songLimit + 20">Load more</button></td>
 	</tr>
 </table>

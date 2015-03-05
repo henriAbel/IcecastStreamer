@@ -3,6 +3,7 @@ app.controller('SongController', ['$scope', 'SongProvider', 'ngToast', 'Playlist
 	
 	$scope.songs = SongProvider.query();
 	$scope.playlists = PlaylistProvider.query();
+	$scope.songLimit = 20;
 
 	$scope.add = function(song) {
 		SongProvider.queue({id: song.id}).$promise.then(function(result) {

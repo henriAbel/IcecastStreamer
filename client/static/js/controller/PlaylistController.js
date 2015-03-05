@@ -20,7 +20,6 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 
 		PlaylistProvider.update({id: playlist.id}, newOrder);
 		$scope.new = true;
-		console.log(newOrder);
 	};
 
 	/*
@@ -47,6 +46,14 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 			if (undefined !== playlist) {
 				$scope.playlists.push(playlist);	
 			}
+		});
+	};
+
+	$scope.shuffle = function(playlist) {
+		PlaylistProvider.shuffle({id: playlist.id}).$promise.then(function(response) {
+			playlist.files = response.files;
+		}, function(error) {
+			console.error(error);
 		});
 	}
 }]);

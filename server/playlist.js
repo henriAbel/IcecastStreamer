@@ -363,6 +363,28 @@ PlaylistManager.prototype.newPlaylist = function(name) {
 	return this.compile(name)[0];
 };
 
+PlaylistManager.prototype.shuffle = function(playlistId) {
+	var playlist = this._getPlaylistFromId(playlistId);
+	if (playlist !== undefined) {
+		shuffle(playlist.paths);
+		return playlist;
+	}
+	playlist.save(this.dirname);
+}
+
+// http://stackoverflow.com/a/6274398
+var shuffle = function shuffle(array) {
+	var counter = array.length, temp, index;
+	while (counter > 0) {
+		index = Math.floor(Math.random() * counter);
+		counter--;
+		temp = array[counter];
+		array[counter] = array[index];
+		array[index] = temp;
+	}
+	return array;
+}
+
 var getAudioFiles = function(type, depth, filePaths) {
 	var audioFiles = [];
 	filePaths.forEach(function(filePath) {

@@ -45,4 +45,12 @@ playlistRouter.route('/:id/queue').post(function (request, response) {
 	response.json(result);
 });
 
+playlistRouter.route('/:id/shuffle').post(function (request, response) {
+	var id = request.params.id;
+	var manager = server.getInstance().player.playlistManager;
+	var playlist = manager.shuffle(id);
+	response.status(200);
+	response.json(manager.compile(playlist.name)[0]);
+});
+
 module.exports = playlistRouter;

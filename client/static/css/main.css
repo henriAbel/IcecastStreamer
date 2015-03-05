@@ -54,6 +54,19 @@
 	margin: 0;
 }
 
+.panel-heading .playlist-toggle {
+	cursor: pointer;
+}
+
+.panel-heading .glyphicon {
+	margin-left: 15px;
+	top: 5px;
+}
+
+.panel-heading .shuffle {
+	margin-left: 10px;
+}
+
 .playlist-file-count {
 	margin-top: 3px;
 	display: inline-block;
@@ -154,4 +167,8 @@ a.dropdown-toggle:hover {
 
 .corssfade-progress svg {
 	margin-top: 5px;
+}
+
+button.new-playlist {
+	margin: 10px 10px 10px 0px;
 }
