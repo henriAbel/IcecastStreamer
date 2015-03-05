@@ -145,3 +145,13 @@ a.dropdown-toggle:hover {
 	-moz-border-radius: 6px 0 6px 6px;
 	border-radius: 6px 0 6px 6px;
 }
+
+.corssfade-progress circle {
+	stroke-linecap: round;
+	stroke: #F56325;
+	transition: stroke-dashoffset 0.1s linear;
+}
+
+.corssfade-progress svg {
+	margin-top: 5px;
+}

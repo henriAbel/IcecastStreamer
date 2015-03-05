@@ -18,8 +18,12 @@ playerRouter.route('/current_song/').get(function (request, response) {
 });
 
 playerRouter.route('/next/').get(function (request, response) {
-	server.getInstance().player.softNext();
-	response.json(getSongData());
+	var next = server.getInstance().player.softNext();
+	var songData = getSongData();
+	songData.crossfading = next.crossfading;
+	if (next.offset !== undefined)
+		songData.offset = next.offset
+	response.json(songData);
 });
 
 playerRouter.route('/listeners/').get(function (request, response) {

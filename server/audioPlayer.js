@@ -215,8 +215,20 @@ Player.prototype.next = function() {
 	Overwrites current song length to current position + corssfaded frames
 */
 Player.prototype.softNext = function() {
-	this.currentFrames.length = this.frameIndex + this.crossFadedFrames;
-
+	if (this.crossFading === true) {
+		this.next();
+		this.crossFading = false;
+		return {
+			crossfading: false,
+		};
+	}
+	else {
+		this.currentFrames.length = this.frameIndex + this.crossFadedFrames;	
+		return {
+			crossfading: true,
+			offset: config.crossfade
+		};
+	}
 };
 
 Player.prototype.stop = function() {

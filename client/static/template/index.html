@@ -39,7 +39,8 @@
 					</li>
 					<li class="audio-control">
 						<a>{{$root.currentSong}}</a>
-						<a ng-click="next()"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span></a>
+						<a ng-click="next()"><span class="glyphicon glyphicon-forward" aria-hidden="true" ng-hide="progress > 0"></span></a>
+						<progress-arc size="40" class="corssfade-progress" stroke="white" stroke-width="6" complete="progress" ng-show="progress > 0"></progress-arc>
 					</li>
 				</ul>
 			</div>

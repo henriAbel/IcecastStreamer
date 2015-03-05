@@ -1,4 +1,4 @@
-var app = angular.module('webui', ['ngRoute', 'ngResource', 'ui.bootstrap', 'ui.sortable', 'ngToast']);
+var app = angular.module('webui', ['ngRoute', 'ngResource', 'ui.bootstrap', 'ui.sortable', 'ngToast', 'angular-progress-arc']);
 var apiBase = '/api/';
 var templateUrl = '/static/template/';
 

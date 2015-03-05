@@ -1,7 +1,9 @@
-app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'PlayerProvider',
- function($scope, $location, $rootScope, PlayerProvider) {
+app.controller('HeaderController', ['$scope', '$location', '$rootScope', '$interval', 'PlayerProvider',
+ function($scope, $location, $rootScope, $interval, PlayerProvider) {
 
 	var intervalId;
+	$scope.progress = 0;
+
 	$scope.isActive = function(location) {
 		return location == $location.path();
 	};
@@ -37,6 +39,18 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', 'Player
 	$scope.next = function() {
 		PlayerProvider.next().$promise.then(function(response) {
 			updateCurrentSong(response);
+			if (response.crossfading) {
+				var offset = response.offset * 10;
+				var progress = 0;
+				$interval(function() {
+					progress += 1;
+					$scope.progress = progress / offset;
+					if ($scope.progress == 1) {
+						$scope.progress = 0;
+						getCurrentSong();
+					}
+				}, 100, offset)
+			}
 		}, function(error) {
 			console.error(error);
 		})
