@@ -8,6 +8,7 @@ var playlistManager = require('./playlist');
 var mp3Parser = require("mp3-parser");
 var stream = require("stream");
 var fs = require('fs');
+var spawn = require('child_process').spawn;
 
 /*
 	One mp3 frame is ~26ms
@@ -53,6 +54,8 @@ var Player = function(streamer) {
 	this.queue2 = [];
 	this.activeDecoder = 0;
 	this.switchDecoder = false;
+	this.decoder1Format = 44100;
+	this.decoder2Format = 44100;
 };
 
 Player.prototype.__proto__ = events.EventEmitter.prototype;
@@ -65,11 +68,53 @@ Player.prototype.start = function() {
 		this.encoder.pipe(this.connection, {end: false});
 		this.decoder1 = this.streamer.getDecoderInstance();
 		this.decoder2 = this.streamer.getDecoderInstance();
-		this.decoder1.on('data', function(data) {
-			self.processData(data, 1);
+		var child = this.resample(1);
+		var buff = [];
+		var t1 = undefined;
+		this.decoder1.on('data', function(data) {		
+			if (this.decoder1Format != 44100) {
+				buff.push(data);
+				if (undefined !== t1) {
+					clearTimeout(t1);
+				}
+				t1 = setTimeout(function() {
+					child.stdin.write(Buffer.concat(buff));
+					buff = [];
+				}, 200);
+				
+			}
+			else {
+				self.processData(data, 1);	
+			}
 		});
+		
+		var child2 = this.resample(2);
+		var buff2 = [];
+		var t2 = undefined;
 		this.decoder2.on('data', function(data) {
-			self.processData(data, 2);
+			if (this.decoder2Format != 44100) {
+				buff2.push(data);
+				if (undefined !== t2) {
+					clearTimeout(t2);
+				}
+				t2 = setTimeout(function() {
+					child2.stdin.write(Buffer.concat(buff2));
+					buff2 = [];
+				}, 200)
+			}
+			else {
+				self.processData(data, 2);
+			}
+		});
+		this.decoder1.on('format', function(format) {
+			console.log(format);
+			this.decoder1Format = format.sampleRate;
+			console.log(this.decoder1Format);
+		});
+		this.decoder2.on('format', function(format) {
+			console.log(format);
+			this.decoder2Format = format.sampleRate;
+			console.log(this.decoder2Format);
 		});
 	}
 	this.idle = false;
@@ -80,6 +125,23 @@ Player.prototype.start = function() {
 		self.mainLoop();
 	}, 900);
 };
+
+Player.prototype.resample = function(encoder) {
+	var self = this;
+	var child = spawn('ffmpeg', ['-f', 's16le', '-ar', '48000', '-ac', '2', '-i', 'pipe:', '-f', 's16le', '-ar', '44100', '-ac', '2', 'pipe:']);
+	child.stderr.on('data', function(data3) {
+		//console.log(String(data3));
+	})
+	child.stdout.on('data', function(data2) {
+		self.processData(data2, encoder)
+	});
+	child.stdout.on('end', function(data2) {
+		
+	});
+	//child.stdin.write(data);
+	//child.stdin.end();
+	return child;
+}
 
 /*
 16 bit pcm
