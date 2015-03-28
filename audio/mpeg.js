@@ -52,6 +52,7 @@ Mpeg.prototype.decodeBuffer = function(buffer, callback) {
 }
 
 Mpeg.prototype.getAudioData = function(filePath, frames, startFrame, length) {
+	console.log(util.format('starts %s length %s path %s', startFrame, length, filePath));
 	var byteStart = startFrame == 0 ? 0 : frames[startFrame].offset;
 	//var byteStart = frames[startFrame].offset;
 	var lastFrame = frames[startFrame + length];
@@ -68,6 +69,7 @@ Mpeg.prototype.getFrames = function(filePath) {
 	var firstFrame = mp3Parser.readFrame(buffer);
 	var lastFrame = mp3Parser.readLastFrame(buffer);
 	var i = 1;
+	var frames = [];
 	// Locate first frame
 	while (null === firstFrame) {
 		i++;
@@ -77,8 +79,13 @@ Mpeg.prototype.getFrames = function(filePath) {
 			process.exit(1);
 		}
 	}
-	var frames = [];
-	var offset = firstFrame._section.offset;
+	
+	frames.push({
+		offset: firstFrame._section.offset,
+		length: firstFrame._section.byteLength,
+		sampleRate: firstFrame.header.samplingRate	
+	});
+	var offset = firstFrame._section.nextFrameIndex;
 	// Locate all other frames
 	while (offset <= lastFrame._section.offset) {
 		var frame = mp3Parser.readFrame(buffer, offset);

@@ -81,11 +81,11 @@ var PlaylistManager = function() {
 		}
 	});
 	this.updateQueue();
-	if (config.commerial.enable && undefined !== config.commerial.dir && undefined !== config.commerial.frequency) {
+	if (config.commercial.enable && undefined !== config.commercial.dir && undefined !== config.commercial.frequency) {
 		try {
-			commercialQueue = getAudioFiles('.mp3', 0, config.commerial.dir);	
-			commercialFrequency = config.commerial.frequency.split(':')[0];
-			commercialsInRow = config.commerial.frequency.split(':')[1];
+			commercialQueue = getAudioFiles('.mp3', 0, config.commercial.dir);	
+			commercialFrequency = config.commercial.frequency.split(':')[0];
+			commercialsInRow = config.commercial.frequency.split(':')[1];
 			if (commercialQueue.length > 0) {
 				logger.info(util.format('Found %s commercial(s)', commercialQueue.length));
 				commercialsEnabled = true;	
@@ -152,11 +152,13 @@ PlaylistManager.prototype.getNextSong = function() {
 			commercialIndex = 0;
 			song = commercialQueue[commercialIndex];
 		}
+		song.commercial = true;
 	}
 	else {
 		song = this.queue.shift();
 		this.updateQueue();
 		songsWithoutCommercial++;
+		song.commercial = false;
 	}
 
 	this.dequeue.unshift(song);
