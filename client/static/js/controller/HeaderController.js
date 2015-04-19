@@ -11,7 +11,7 @@ app.controller('HeaderController', ['$scope', '$location', '$rootScope', '$inter
 	var updateCurrentSong = function(data) {
 		var songTitle = dataToTitle(data.current_song);
 		var nextSongTitle = dataToTitle(data.coming_up);
-		if ($rootScope.currentSong != songTitle && $rootScope.nextSong != nextSongTitle) {
+		if ($rootScope.currentSong != songTitle || $rootScope.nextSong != nextSongTitle) {
 			$rootScope.currentSong = songTitle;
 			$rootScope.nextSong = nextSongTitle;
 			$rootScope.position = data.position;

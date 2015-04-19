@@ -27,10 +27,6 @@ var PlaylistManager = function() {
 	this.currentSongIndex = -1;
 	this.playlists = [];
 	this.queue = [];
-	/* Just for web usage, hold currently plaing and next song
-	   Implement fixed size array in javascript trough EcmaScript 6 proxy ???
-	*/
-	this.dequeue = [];
 	events.EventEmitter.call(this);
 	this.files = getAudioFiles('.mp3', 0, config.musicDir);
 	logger.debug(util.format('Found %s files in: %s', this.files.length, config.musicDir));
@@ -53,10 +49,10 @@ var PlaylistManager = function() {
 		logger.info('Default playlist not found, creating...');
 		this.files.forEach(function(file) {
 			defaultPlaylist.paths.push(file.path);
-		});	
+		});
 		defaultPlaylist.save(this.dirname);
 	}
-	
+
 	defaultPlaylist.locked = true;
 	this.playlists.push(defaultPlaylist);
 
@@ -77,13 +73,13 @@ var PlaylistManager = function() {
 				catch (err) {
 					logger.error(util.format('Cannot load playlist from "%s"', filePath));
 				}
-			}	
+			}
 		}
 	});
 	this.updateQueue();
 	if (config.commercial.enable && undefined !== config.commercial.dir && undefined !== config.commercial.frequency) {
 		try {
-			commercialQueue = getAudioFiles('.mp3', 0, config.commercial.dir);	
+			commercialQueue = getAudioFiles('.mp3', 0, config.commercial.dir);
 			commercialFrequency = config.commercial.frequency.split(':')[0];
 			commercialsInRow = config.commercial.frequency.split(':')[1];
 			if (commercialQueue.length > 0) {
@@ -161,10 +157,6 @@ PlaylistManager.prototype.getNextSong = function() {
 		song.commercial = false;
 	}
 
-	this.dequeue.unshift(song);
-	if (this.dequeue.length > 2) {
-		this.dequeue.pop();
-	}
 	return song;
 };
 
@@ -208,7 +200,7 @@ PlaylistManager.prototype._nextSong = function() {
 
 PlaylistManager.prototype._getSongFromPath = function(path) {
 	for (var i = allFiles.length - 1; i >= 0; i--) {
-		if (allFiles[i].path == path) return allFiles[i];		
+		if (allFiles[i].path == path) return allFiles[i];
 	}
 	logger.error(util.format('Cannot find audioFile for path "%s"', path));
 	return undefined;
@@ -277,7 +269,7 @@ PlaylistManager.prototype.reorderQueue = function(newOrder) {
 	for (i = 0; i < newOrder.length ; i++) {
 		var e = newOrder[i];
 		if (currentIds.indexOf(e) >= 0) {
-			tmpQueue.push(this._getSongFromHash(e));	
+			tmpQueue.push(this._getSongFromHash(e));
 		}
 	}
 	this.queue = tmpQueue;

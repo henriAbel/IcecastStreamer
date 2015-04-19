@@ -26,7 +26,7 @@ var Icecast = function() {
 		process.exit(1);
 	}
 	this.player = new player(this.streamer);
-	this.player.on('songChange', function(song) {
+	this.player.on('songStart', function(song) {
 		song.getMetadata(function(data) {
 			self.sendMeta(data);
 		});
@@ -43,6 +43,7 @@ var Icecast = function() {
 
 Icecast.prototype.onMessage = function(message) {
 	var msg = message.toString().trim();
+	console.log(msg);
 	var self = this;
 	if (msg == 'HTTP/1.0 200 OK') {
 		this.player.connection = this.connection;	
@@ -88,6 +89,7 @@ Icecast.prototype.updateListeners = function() {
 
 Icecast.prototype.onClose = function() {
 	logger.debug('Connection closed');
+	console.log('Connection closed');
 	if (!this.player.idle) {
 		this.player.stop();
 		this.connection = this.createConnection();
@@ -109,9 +111,11 @@ Icecast.prototype.createConnection = function() {
 		self.onMessage(message);
 	});
 	client.on('end', function() {
+		console.log('connection end');
 		self.onClose();
 	});
 	client.on('error', function(error) {
+		console.error(error);
 		logger.debug(error);
 	});
 	return client;

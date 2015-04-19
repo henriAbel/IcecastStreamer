@@ -7,9 +7,9 @@ var playerRouter = express.Router({mergeParams: true});
 var getSongData = function() {
 	var s = server.getInstance().player;
 	return {
-		current_song: s.playlistManager.dequeue[1],
-		coming_up: s.playlistManager.dequeue[0],
-		position: s.getPosition()
+		current_song: s.getActiveDeck().song,
+		coming_up: s.playlistManager.queue[0],
+		position: s.getActiveDeck().getPosition()
 	};
 };
 
@@ -18,7 +18,7 @@ playerRouter.route('/current_song/').get(function (request, response) {
 });
 
 playerRouter.route('/next/').get(function (request, response) {
-	var next = server.getInstance().player.softNext();
+	var next = server.getInstance().player.next();
 	var songData = getSongData();
 	songData.crossfading = next.crossfading;
 	if (next.offset !== undefined)

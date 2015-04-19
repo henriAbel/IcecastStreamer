@@ -52,16 +52,30 @@ Mpeg.prototype.decodeBuffer = function(buffer, callback) {
 }
 
 Mpeg.prototype.getAudioData = function(filePath, frames, startFrame, length) {
-	console.log(util.format('starts %s length %s path %s', startFrame, length, filePath));
 	var byteStart = startFrame == 0 ? 0 : frames[startFrame].offset;
-	//var byteStart = frames[startFrame].offset;
 	var lastFrame = frames[startFrame + length];
 	var byteEnd = lastFrame.offset + lastFrame.length;
 	var fd = fs.openSync(filePath, "r");
 	var buffer = new Buffer(byteEnd - byteStart);
-	fs.readSync(fd, buffer, 0, buffer.length, byteStart);
-	fs.close(fd);
+	try {
+		fs.readSync(fd, buffer, 0, buffer.length, byteStart);
+		fs.close(fd);	
+	}
+	catch (err) {
+		console.log('_-------------------------_');
+		console.log(getFilesizeInBytes(filePath));
+		console.log(buffer.length, byteStart); 
+		console.error(err);
+		process.exit(1);
+	}
+	
 	return buffer;
+}
+
+function getFilesizeInBytes(filename) {
+ var stats = fs.statSync(filename)
+ var fileSizeInBytes = stats["size"]
+ return fileSizeInBytes
 }
 
 Mpeg.prototype.getFrames = function(filePath) {
