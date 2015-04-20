@@ -9,6 +9,8 @@ config.playstlistDir = '';
 config.commerial = {};
 config.commerial.enable = true;
 config.commerial.dir = ['/home/user/Commercial'];
+// If set true commecrials are also crossfaded
+config.commercial.crossfade = false;
 /*
 	Frequnecy consists with two numbers. First one shows how many regular songs are played until commecrial
 	Second one shows how many commercials are played one time. Numbers are sperated by :
@@ -25,5 +27,10 @@ config.icecast.description = '';
 
 config.client = {};
 config.client.port = 8080;
+
+config.audio = {};
+config.audio.outSampleRate = 44100;
+
+config.debugLevel = 'INFO';
 
 module.exports = config;
