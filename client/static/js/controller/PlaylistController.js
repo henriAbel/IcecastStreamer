@@ -8,8 +8,15 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 		}
 	};
 
+	$scope.modify = function(playlist) {
+		var modifyObject = angular.copy(playlist);
+		delete modifyObject.files;
+		console.log(modifyObject);
+		PlaylistProvider.update({id: playlist.id}, modifyObject);
+	};
+
 	/*
-	Saves current playlist
+	Saves current playlist paths
 	*/
 	$scope.save = function(playlist) {
 		var newOrder = [];
@@ -18,7 +25,7 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 			newOrder.push(e.id);
 		}
 
-		PlaylistProvider.update({id: playlist.id}, newOrder);
+		PlaylistProvider.update({id: playlist.id, action: 'paths'}, newOrder);
 		$scope.new = true;
 	};
 
@@ -55,5 +62,5 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 		}, function(error) {
 			console.error(error);
 		});
-	}
+	};
 }]);

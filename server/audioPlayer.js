@@ -164,10 +164,13 @@ Player.prototype.next = function() {
 };
 
 Player.prototype.getActiveDeck = function() {
+	var closingDeck;
 	for (var i = this.audioDecks.length - 1; i >= 0; i--) {
 		var e = this.audioDecks[i];
 		if (e.state === 1 || e.state === 2) return e;
+		if (e.state === 3) closingDeck = e;
 	}
+	return e;
 };
 
 Player.prototype.getNextDeck = function(id) {

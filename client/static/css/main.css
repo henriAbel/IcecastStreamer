@@ -63,8 +63,12 @@
 	top: 5px;
 }
 
-.panel-heading .shuffle {
-	margin-left: 10px;
+.panel-body-header {
+	margin-bottom: 15px;
+}
+
+.panel-body-header button {
+	margin-right: 10px;
 }
 
 .playlist-file-count {

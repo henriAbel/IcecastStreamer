@@ -1,5 +1,6 @@
 var logger = require('logger');
-var metadata = require('./metadataReader');
+var bufferedReader = require('./metadataReader');
+var metadata = require('ffmetadata');
 var util = require('util');
 var crypto = require('crypto');
 
@@ -14,7 +15,7 @@ var AudioFile = function(path) {
 
 AudioFile.prototype.readMetadata = function() {
 	var self = this;
-	metadata.read(self.path, function(err, data) {
+	bufferedReader.read(self.path, function(err, data) {
 		if (!err) {
 			self.metadata = data;
 		}

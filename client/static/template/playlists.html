@@ -18,10 +18,14 @@
 				<option value="2">Add after current playlist</option>
 			</select>
 		</div>
-		<button class="btn btn-primary pull-right shuffle" ng-click="shuffle(playlist)">Shuffle</button>
-		<button class="btn btn-primary pull-right" ng-click="save(playlist)" ng-class="{disabled: new}">Save</button>
 	</div>
 	<div class="panel-body" ng-show="playlist.visible">
+		<div class="panel-body-header clearfix">
+			<button class="btn btn-primary pull-left shuffle" ng-click="shuffle(playlist)">Shuffle</button>
+			<button class="btn btn-primary pull-left" ng-click="save(playlist)" ng-class="{disabled: new}">Save song order</button>
+			<label for="auto-shuffle">Auto shuffle</label>
+			<input type="checkbox" id="auto-shuffle" ng-change="modify(playlist)" ng-model="playlist.autoShuffle" />
+		</div>
 		<ul class="list-group" ui-sortable="attrs" ng-model="playlist.files">
 			<li modify-song="song" class="list-group-item playlist-item" ng-repeat="song in playlist.files">
 				<span class="playlist-index">{{ $index +1}}</span>

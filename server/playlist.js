@@ -201,7 +201,7 @@ PlaylistManager.prototype._nextSong = function() {
 		antiloop = true;
 	}
 	var playlist = playlistQueue[0];
-	if (this.currentSongIndex == 0 && playlist.autoShuffle) {
+	if (this.currentSongIndex === 0 && playlist.autoShuffle) {
 		logger.debug(util.format('Shuffling playlist: %s', playlist.name));
 		this.shuffle(playlist.id);
 	}
@@ -248,6 +248,7 @@ PlaylistManager.prototype.compile = function(name) {
 			playlists.push({
 				name: playlist.name,
 				locked: playlist.locked,
+				autoShuffle: playlist.autoShuffle,
 				id: playlist.id,
 				files: files
 			});
@@ -281,6 +282,28 @@ PlaylistManager.prototype.updatePlaylist = function(id, paths) {
 	}
 	playlist.save(this.dirname);
 	return;
+};
+
+PlaylistManager.prototype.modify = function(playlistObject) {
+	var playlist = this._getPlaylistFromId(playlistObject.id);
+	if (undefined === playlist) {
+		return {
+			error: true,
+			message: 'Playlist not found'
+		};
+	}
+	var keys = ['name', 'autoShuffle'];
+	for (var i = keys.length - 1; i >= 0; i--) {
+		var k = keys[i];
+		if (playlistObject.hasOwnProperty(k)) {
+			playlist[k] = playlistObject[k];
+		}
+	}
+
+	playlist.save(this.dirname);
+	return {
+		error: false
+	};
 };
 
 /*

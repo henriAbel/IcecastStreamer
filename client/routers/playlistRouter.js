@@ -14,7 +14,16 @@ playlistRouter.route('/').post(function (request, response) {
 	response.json(result);
 });
 
-playlistRouter.route('/:id').put(function (request, response) {
+playlistRouter.route('/:id/').put(function (request, response) {
+	var id = request.params.id;
+	var playlist = request.body;
+	var result = server.getInstance().player.playlistManager.modify(playlist);
+
+	response.status(result.error ? 400 : 200);
+	response.json(result);
+});
+
+playlistRouter.route('/:id/paths').put(function (request, response) {
 	var id = request.params.id;
 	var paths = request.body;
 	server.getInstance().player.playlistManager.updatePlaylist(id, paths);

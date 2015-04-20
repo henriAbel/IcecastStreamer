@@ -1,8 +1,9 @@
 var metadata = require('ffmetadata');
-
-
 var maxOpenReads = 200;
 
+/*
+	Queues all metadata requests to limit concurrent file reads
+*/
 var Reader = function() {
 	this.c = 0;
 	this.queue = [];
