@@ -1,7 +1,7 @@
 var parser = require("mp3-parser");
 var fs = require('fs');
 var util = require('util');
-var lame = require('lame')
+var lame = require('lame');
 var stream = require("stream");
 var logger = require('logger');
 var config = require('config/config');
@@ -28,13 +28,13 @@ var Mpeg = function() {
 		bitRate: 128,
 		outSampleRate: 44100
 	};
-}
+};
 
 Mpeg.prototype.decode = function(file) {
 	var stream = fs.createReadStream(file)
-	.pipe(new lame.Decoder);
+	.pipe(new lame.Decoder());
 	return stream;
-}
+};
 
 Mpeg.prototype.decodeBuffer = function(buffer, callback) {
 	var bufferStream = new stream.Transform();
@@ -49,49 +49,35 @@ Mpeg.prototype.decodeBuffer = function(buffer, callback) {
 	decoder.on('end', function() {
 		callback(Buffer.concat(bf));
 	});
-}
+};
 
 Mpeg.prototype.getAudioData = function(filePath, frames, startFrame, length) {
-	var byteStart = startFrame == 0 ? 0 : frames[startFrame].offset;
+	var byteStart = startFrame === 0 ? 0 : frames[startFrame].offset;
 	var lastFrame = frames[startFrame + length];
+	if (lastFrame >= frames.length) lastFrame = frames.length - 1;
 	var byteEnd = lastFrame.offset + lastFrame.length;
 	var fd = fs.openSync(filePath, "r");
 	var buffer = new Buffer(byteEnd - byteStart);
-	try {
-		fs.readSync(fd, buffer, 0, buffer.length, byteStart);
-		fs.close(fd);	
-	}
-	catch (err) {
-		console.log('_-------------------------_');
-		console.log(getFilesizeInBytes(filePath));
-		console.log(buffer.length, byteStart); 
-		console.error(err);
-		process.exit(1);
-	}
+	fs.readSync(fd, buffer, 0, buffer.length, byteStart);
+	fs.close(fd);	
 	
 	return buffer;
-}
-
-function getFilesizeInBytes(filename) {
- var stats = fs.statSync(filename)
- var fileSizeInBytes = stats["size"]
- return fileSizeInBytes
-}
+};
 
 Mpeg.prototype.getFrames = function(filePath) {
 	var buffer = new DataView(toArrayBuffer(fs.readFileSync(filePath)));
+	if (undefined === buffer) {
+		console.error('File is null: ' + filePath);
+		return false;
+	}
 	var firstFrame = mp3Parser.readFrame(buffer);
-	var lastFrame = mp3Parser.readLastFrame(buffer);
+	var lastFrame = buffer.byteLength;
 	var i = 1;
 	var frames = [];
 	// Locate first frame
 	while (null === firstFrame) {
 		i++;
 		firstFrame = mp3Parser.readFrame(buffer, i, true);
-		if (i > lastFrame._section.offset) {
-			console.error('Well something is not right! Will die now');
-			process.exit(1);
-		}
 	}
 	
 	frames.push({
@@ -101,20 +87,26 @@ Mpeg.prototype.getFrames = function(filePath) {
 	});
 	var offset = firstFrame._section.nextFrameIndex;
 	// Locate all other frames
-	while (offset <= lastFrame._section.offset) {
-		var frame = mp3Parser.readFrame(buffer, offset);
+	while (offset <= lastFrame) {
+		var frame;
+		try {
+			// readFrame can throw exception in some cases
+			frame = mp3Parser.readFrame(buffer, offset);
+		}
+		catch (err) {}
 		if (frame === null || frame === undefined) {
-			logger.error(util.format('breaking at offset %s path %s', offset, filePath));
+			logger.debug(util.format('breaking at offset %s path %s', offset, filePath));
 			break;
 		}
 		frames.push({
 			offset: frame._section.offset,
 			length: frame._section.byteLength	
 		});
-		offset = frame._section.nextFrameIndex;
+
+		offset += frame._section.byteLength;
 	}
 	return frames;
-}
+};
 
 Mpeg.prototype.encode = function(pcm) {
 	var bufferStream = new stream.Transform();
@@ -124,15 +116,15 @@ Mpeg.prototype.encode = function(pcm) {
 	bufferStream.end();
 
 	return encoder;
-}
+};
 
 Mpeg.prototype.getEncoderInstance = function() {
 	return new lame.Encoder(this.encoderConf);
-}
+};
 
 Mpeg.prototype.getDecoderInstance = function() {
 	return new lame.Decoder();
-}
+};
 
 module.exports = Mpeg;
 

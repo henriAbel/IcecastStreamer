@@ -1,5 +1,4 @@
-<h2>Songs in buffer:</h2>
-<span>These songs are already in player buffer and cannot be reordered</span>
+<h2>Current song:</h2>
 <hr />
 <ul class="list-group">
 	<li class="list-group-item playlist-item">
@@ -7,7 +6,6 @@
 		<span class="song-100 song-position-detail">{{rawPosition.position | number: 0}}s / {{rawPosition.length | number: 0}}s</span>
 		<span>{{$root.currentSong}}</span>
 	</li>
-	<li class="list-group-item playlist-item">{{$root.nextSong}}</li>
 </ul>
 
 <h2>Queue:</h2>

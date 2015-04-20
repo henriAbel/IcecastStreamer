@@ -51,9 +51,13 @@ var PlaylistManager = function() {
 			defaultPlaylist.paths.push(file.path);
 		});
 		defaultPlaylist.save(this.dirname);
+		logger.info('Default playlist created');
 	}
 
 	defaultPlaylist.locked = true;
+	if (defaultPlaylist.paths.length !== this.files.length) {
+		console.log('playlist is missing files');
+	}
 	this.playlists.push(defaultPlaylist);
 
 	// Load all playlists
@@ -66,9 +70,12 @@ var PlaylistManager = function() {
 			if (!fs.lstatSync(filePath).isDirectory()) {
 				// Could be playlist
 				try {
-					var p = new Playlist(fileName);
+					var p = new Playlis(tfileName);
 					p.load(self.dirname);
 					self.playlists.push(p);
+					if (p.autoShuffle) {
+						self.shuffle(p.id);
+					}
 				}
 				catch (err) {
 					logger.error(util.format('Cannot load playlist from "%s"', filePath));
@@ -92,9 +99,10 @@ var PlaylistManager = function() {
 			logger.error(util.format('Cannot enable commercials: %s', err));
 		}
 	}
+	logger.info('Playlist manager started');
 };
 
-PlaylistManager.prototype.__proto__ = events.EventEmitter.prototype;
+util.inherits(PlaylistManager, events.EventEmitter);
 
 var Playlist = function(name) {
 	i++;
@@ -102,18 +110,27 @@ var Playlist = function(name) {
 	this.name = name;
 	// If set true, this playlist cannot be deleted
 	this.locked = false;
+	this.autoShuffle = false;
 	this.id = i;
 };
 
 Playlist.prototype.save = function(dirname) {
-	fs.writeFile(path.join(dirname, this.name), JSON.stringify(this.paths), function(error) {
+	var playListObject = {
+		paths: this.paths,
+		autoShuffle: this.autoShuffle
+	};
+	fs.writeFile(path.join(dirname, this.name), JSON.stringify(playListObject), function(error) {
 		if (error) logger.error(error);
 	});
 };
 
 Playlist.prototype.load = function(dirname) {
-	this.paths = JSON.parse(fs.readFileSync(path.join(dirname, this.name), 'utf8'));
-	//console.log('cannot load: ' + path.join(this.dirname, this.name));
+	var playListObject = JSON.parse(fs.readFileSync(path.join(dirname, this.name), 'utf8'));
+	if (undefined === playListObject || undefined ===playListObject.paths || undefined === playListObject.autoShuffle) {
+		throw 'Invalid playlist';
+	}
+	this.paths = playListObject.paths;
+	this.autoShuffle = playListObject.autoShuffle;
 };
 
 Playlist.prototype.hasNext = function(index) {
@@ -134,7 +151,7 @@ PlaylistManager.prototype.addSong = function(songHash, playlistId) {
 
 PlaylistManager.prototype.getNextSong = function() {
 	var song;
-	if (commercialsEnabled && songsWithoutCommercial >= commercialFrequency) {
+	if (this.nextCommercial()) {
 		songsWithCommercials++;
 		if (songsWithCommercials >= commercialsInRow) {
 			songsWithCommercials = 0;
@@ -160,6 +177,11 @@ PlaylistManager.prototype.getNextSong = function() {
 	return song;
 };
 
+// Returns true if next song is commercial
+PlaylistManager.prototype.nextCommercial = function() {
+	return commercialsEnabled && songsWithoutCommercial >= commercialFrequency;
+};
+
 PlaylistManager.prototype.updateQueue = function() {
 	if (this.queue.length < minQueueSize) {
 		var song = this._nextSong();
@@ -179,6 +201,10 @@ PlaylistManager.prototype._nextSong = function() {
 		antiloop = true;
 	}
 	var playlist = playlistQueue[0];
+	if (this.currentSongIndex == 0 && playlist.autoShuffle) {
+		logger.debug(util.format('Shuffling playlist: %s', playlist.name));
+		this.shuffle(playlist.id);
+	}
 	var nextSong;
 	if (playlist.hasNext(this.currentSongIndex)) {
 		nextSong = playlist.paths[this.currentSongIndex +1];
@@ -364,7 +390,7 @@ PlaylistManager.prototype.shuffle = function(playlistId) {
 		playlist.save(this.dirname);
 		return playlist;
 	}
-}
+};
 
 // http://stackoverflow.com/a/6274398
 var shuffle = function shuffle(array) {
@@ -377,7 +403,7 @@ var shuffle = function shuffle(array) {
 		array[index] = temp;
 	}
 	return array;
-}
+};
 
 var getAudioFiles = function(type, depth, filePaths) {
 	var audioFiles = [];

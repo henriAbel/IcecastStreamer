@@ -12,10 +12,9 @@ var Player = function(streamer) {
 	var self = this;
 	this.streamer = streamer;
 	this.connection = undefined;
-	this.audioDecks = []
+	this.audioDecks = [];
 	this.audioDecks.push(this.createDeck(0));
 	this.audioDecks.push(this.createDeck(1));
-	this.activeDeck = 0;
 	this.playlistManager = new playlistManager();
 	this.playlistManager.on('stop', function() {
 		logger.debug('Audioplayer has been stopped');
@@ -24,7 +23,9 @@ var Player = function(streamer) {
 	});
 	this.interval = setInterval(function() {
 		self.mainLoop();
-	}, 600);
+	}, 1000);
+	this.retryCount = 0;
+	logger.info('Audioplayer started');
 };
 
 util.inherits(Player, events.EventEmitter);
@@ -34,20 +35,22 @@ Player.prototype.createDeck = function(id) {
 	deck.id = id;
 	var self = this;
 	deck.on('position', function(position) {
-		if (this.state == 1 && !this.song.commercial && this.frameIndex >= this.frames.length - this.corssfadedFrames - 30) {
+		if (this.state == 1 && (!this.song.commercial || config.commercial.crossfade) 
+			&& this.frameIndex >= this.frames.length - this.corssfadedFrames - 30) {
+
 			this.fadeOut();
-			var nextDeck = self.getNextDeck(this.id);
-			self.playNext(nextDeck);
+			if (!self.playlistManager.nextCommercial() || config.commercial.crossfade) {
+				var nextDeck = self.getNextDeck(this.id);
+				self.playNext(nextDeck);	
+			}
 		}
 	});
 	deck.on('end', function() {
-		self.activeDeck++;
-		if (self.activeDeck >= self.audioDecks.length) self.activeDeck = 0;
 		var nextDeck = self.getNextDeck(this.id);
 		self.playNext(nextDeck);
 	});
 	return deck;
-}
+};
 
 Player.prototype.start = function() {
 	if (undefined === this.encoder) {
@@ -56,25 +59,45 @@ Player.prototype.start = function() {
 	}
 
 	var song = this.playlistManager.getNextSong();
-	this.audioDecks[this.activeDeck].play(song, true);
+	this.audioDecks[0].play(song, true);
 	this.emit('songStart', song);
 };
 
 Player.prototype.mainLoop = function() {
-	var min = undefined;
-	// Audiodeck count which have outbuff.length > 0
-	var c = 0;
-	for (var i = this.audioDecks.length - 1; i >= 0; i--) {
-		var len = this.audioDecks[i].outBuffer.length;
+	var min, i, j, e;
+	/* 	c = Audiodeck count which have outbuff.length > 0
+		p = Not idling audiodecks
+	*/ 
+	var c = 0, p = 0;
+	for (i = this.audioDecks.length - 1; i >= 0; i--) {
+		var d = this.audioDecks[i];
+		var len = d.outBuffer.length;
 		if (len > 0) {
 			min = min === undefined ? len : Math.min(min, len);
 			c++;
 		}
+		if (d.state > 0) {
+			p++;
+		}
 	}
 	if (min > 0) {
+		if (p > c && this.retryCount < 2) {
+			// Some audiodecks are still processing audio
+			this.retryCount++;
+			var self = this;
+			logger.debug('c %d p %d r %d', c, p, this.retryCount);
+			setTimeout(function() {
+				self.mainLoop();
+			}, 150);
+			return;
+		}
+		if (this.retryCount > 0) {
+			logger.debug('retry reset');
+			this.retryCount = 0;	
+		}
 		if (c == 1) {
-			for (var i = this.audioDecks.length - 1; i >= 0; i--) {
-				var e = this.audioDecks[i].outBuffer;
+			for (i = this.audioDecks.length - 1; i >= 0; i--) {
+				e = this.audioDecks[i].outBuffer;
 				if (e.length > 0) {
 					this.encoder.write(new Buffer(e));
 					this.audioDecks[i].outBuffer = new Buffer(0);
@@ -84,9 +107,9 @@ Player.prototype.mainLoop = function() {
 		}
 		else {
 			var tmpBuff = new Buffer(min);
-			for (var i = 0; i < min/2; i++) {
+			for (i = 0; i < min/2; i++) {
 				var value = 0;
-				for (var j = this.audioDecks.length - 1; j >= 0; j--) {
+				for (j = this.audioDecks.length - 1; j >= 0; j--) {
 					var buff = this.audioDecks[j].outBuffer;
 					if (buff.length > 0) {
 						value += buff.readInt16LE(i*2);	
@@ -99,8 +122,8 @@ Player.prototype.mainLoop = function() {
 
 				
 			}
-			for (var j = this.audioDecks.length - 1; j >= 0; j--) {
-				var e = this.audioDecks[j];
+			for (j = this.audioDecks.length - 1; j >= 0; j--) {
+				e = this.audioDecks[j];
 				if (e.outBuffer.length > 0) {
 					e.outBuffer = new Buffer(e.outBuffer.slice(min));
 				}
@@ -109,7 +132,7 @@ Player.prototype.mainLoop = function() {
 		}
 		
 	}
-}
+};
 
 Player.prototype.playNext = function(deck) {
 	if (deck.state === 0) {
@@ -117,10 +140,10 @@ Player.prototype.playNext = function(deck) {
 		deck.play(song, !song.commercial);
 		this.emit('songStart', song);
 	}
-}
-
+};
 
 Player.prototype.next = function() {
+	logger.debug('Next called');
 	var deck = this.getActiveDeck();
 	var e = {
 		crossfading: deck.state == 1,
@@ -128,6 +151,10 @@ Player.prototype.next = function() {
 	};
 	if (deck.state == 1) {
 		deck.fadeOut();
+		if (!this.playlistManager.nextCommercial() || config.commercial.crossfade) {
+			var nextDeck = this.getNextDeck(deck.id);
+			this.playNext(nextDeck);	
+		}
 	}
 	else {
 		deck.stop();
@@ -137,8 +164,11 @@ Player.prototype.next = function() {
 };
 
 Player.prototype.getActiveDeck = function() {
-	return this.audioDecks[this.activeDeck];
-}
+	for (var i = this.audioDecks.length - 1; i >= 0; i--) {
+		var e = this.audioDecks[i];
+		if (e.state === 1 || e.state === 2) return e;
+	}
+};
 
 Player.prototype.getNextDeck = function(id) {
 	var nextId = id + 1;
@@ -146,7 +176,7 @@ Player.prototype.getNextDeck = function(id) {
 		nextId = 0;
 	}
 	return this.audioDecks[nextId];
-}
+};
 
 Player.prototype.stop = function() {
 	for (var i = this.audioDecks.length - 1; i >= 0; i--) {

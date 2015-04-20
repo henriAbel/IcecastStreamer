@@ -1,5 +1,5 @@
 var logger = require('logger');
-var metadata = require('ffmetadata');
+var metadata = require('./metadataReader');
 var util = require('util');
 var crypto = require('crypto');
 
@@ -14,29 +14,24 @@ var AudioFile = function(path) {
 
 AudioFile.prototype.readMetadata = function() {
 	var self = this;
-	try {
-		metadata.read(self.path, function(err, data) {
-			if (!err) {
-				self.metadata = data;
-			}
-			else {
-				logger.debug(err);
-			}
-		});	
-	}
-	catch (e) {
-		logger.debug(e);
-	}
-	if (Object.keys(self.metadata).length === 0) {
-		self.metadata = {'title': 'Unknown song'};
-	}
+	metadata.read(self.path, function(err, data) {
+		if (!err) {
+			self.metadata = data;
+		}
+		else {
+			logger.debug(err);
+		}
+		if (Object.keys(self.metadata).length === 0) {
+			self.metadata = {'title': 'Unknown song'};
+		}
 
-	if (self.metadataCallback.length > 0) {
-		self.metadataCallback.forEach(function(callback) {
-			callback.call(self, self.metadata);
-		});
-		self.metadataCallback = [];
-	}
+		if (self.metadataCallback.length > 0) {
+			self.metadataCallback.forEach(function(callback) {
+				callback.call(self, self.metadata);
+			});
+			self.metadataCallback = [];
+		}
+	});		
 };
 
 AudioFile.prototype.updateMetadata = function(data) {

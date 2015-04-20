@@ -10,7 +10,7 @@ var deckState = {
 	playing: 1,
 	fadeIn: 2,
 	fadeOut: 3
-}
+};
 
 var AudioDeck = function(streamer) {
 	events.EventEmitter.call(this);
@@ -22,23 +22,13 @@ var AudioDeck = function(streamer) {
 	this.sampleRate = 44100;
 	this.outBuffer = new Buffer(0);
 
-	var resampler = new Resampler({
+	this.resampler = new Resampler({
 		sourceRate: this.sampleRate,
 		targetRate: config.audio.outSampleRate,
 		stereo : true
 	});
 
 	var decoder = this.streamer.getDecoderInstance();
-	decoder.on('format', function(format) {
-		if (format.sampleRate !== self.sampleRate) {
-			resampler.configure({
-				sourceRate: format.sampleRate,
-				targetRate: config.audio.outSampleRate,
-				stereo : true		
-			});
-			this.sampleRate = format.sampleRate;
-		}
-	});
 	this.processors.push(decoder);
 	var fader = new fade(this);
 	fader.on('fadeDone', function() {
@@ -51,7 +41,7 @@ var AudioDeck = function(streamer) {
 		}
 	});
 	this.processors.push(fader);
-	this.processors.push(resampler);
+	this.processors.push(this.resampler);
 	this.on('songStart', function() {
 		fader.reset();
 	});
@@ -69,24 +59,39 @@ var AudioDeck = function(streamer) {
 			e.pipe(next, {end: false});
 		}
 	}
-}
+};
 
 util.inherits(AudioDeck, events.EventEmitter);
 
 AudioDeck.prototype.fadeOut = function() {
 	this.state = deckState.fadeOut;
-}
+};
 
 AudioDeck.prototype.play = function(song, fadeIn) {
 	if (this.state !== deckState.idle) {
-		console.error('AudioDeck already playing');
+		logger.error('AudioDeck already playing');
 		return;
 	}
 	var self = this;
 	self.emit('songStart', song);
 	this.song = song;
-	this.fadeIn = fadeIn;
-	this.frames = this.streamer.getFrames(this.song.path)
+	this.frames = this.streamer.getFrames(this.song.path);
+	var newSampleRate = this.frames[0].sampleRate;
+	if (newSampleRate !== this.sampleRate) {
+		this.resampler.configure({
+			sourceRate: newSampleRate,
+			targetRate: config.audio.outSampleRate,
+			stereo : true		
+		});
+		this.sampleRate = newSampleRate;
+		logger.debug(util.format('new sampleRate: %d', this.sampleRate));
+	}
+	
+	if (!this.frames) {
+		self.stop();
+		logger.error(util.format('Cannot open file: %s', song.path));
+		return;
+	}
 	this.start = Date.now();
 	this.frameIndex = 0;
 	this.corssfadedFrames = this.getCrossfadedFrames(this.frames);
@@ -94,8 +99,11 @@ AudioDeck.prototype.play = function(song, fadeIn) {
 		self.mainLoop();
 	}, 900);
 	this.state = fadeIn ? deckState.fadeIn : deckState.playing;
+	if (this.state === deckState.playing && this.volume < 1) {
+		this.volume = 1;
+	}
 	self.mainLoop();
-}
+};
 
 /*
 	Mainloop
@@ -106,19 +114,17 @@ AudioDeck.prototype.mainLoop = function() {
 	var currentFrameDuration = this.getFrameDuration(this.frames);
 	var framesToSend = Math.ceil(timeSinceLastSendms / currentFrameDuration);
 	now += framesToSend * currentFrameDuration - timeSinceLastSendms;
+	this.start = now;
 	var lastFrameIndex = this.frameIndex + framesToSend;
-
+	
 	if (this.frames.length <= lastFrameIndex) {
 		lastFrameIndex = this.frames.length -1 ;
 		framesToSend = lastFrameIndex - this.frameIndex;
 		clearInterval(this.interval);
 		this.state = deckState.idle;
 	}
-	else {
-		this.start = now;
-	}
 
-	var data = this.streamer.getAudioData(this.song.path, this.frames, this.frameIndex, framesToSend - 1);
+	var data = this.streamer.getAudioData(this.song.path, this.frames, this.frameIndex, framesToSend -1);
 
 	this.processors[0].write(data);
 	if (this.state === deckState.idle) {
@@ -128,32 +134,35 @@ AudioDeck.prototype.mainLoop = function() {
 	this.frameIndex += framesToSend;
 	this.position = Math.round(this.frameIndex / this.frames.length * 100);
 	this.emit('position', this.position);
-}
+};
 
 AudioDeck.prototype.stop = function() {
 	this.state = deckState.idle;
 	this.frames = [];
 	clearInterval(this.interval);
 	this.emit('end');
-}
+};
 
 /*
 	One frame duration in ms-s
 */
 AudioDeck.prototype.getFrameDuration = function(frames) {
 	return 1000 / frames[0].sampleRate * 1152;
-}
+};
 
 AudioDeck.prototype.getCrossfadedFrames = function(frames) {
 	return Math.ceil(config.crossfade * 1000 / this.getFrameDuration(frames));
-}
+};
 
 AudioDeck.prototype.getPosition = function() {
-	var currentFrameDuration = this.getFrameDuration(this.frames);
-	return {
-		position: this.frameIndex * currentFrameDuration / 1000,
-		length: this.frames.length * currentFrameDuration / 1000
-	};
+	if (this.frames.length > 0) {
+		var currentFrameDuration = this.getFrameDuration(this.frames);
+		return {
+			position: this.frameIndex * currentFrameDuration / 1000,
+			length: this.frames.length * currentFrameDuration / 1000
+		};	
+	}
+	return {};
 };
 
 module.exports = AudioDeck;

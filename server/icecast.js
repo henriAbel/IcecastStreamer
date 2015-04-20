@@ -43,7 +43,6 @@ var Icecast = function() {
 
 Icecast.prototype.onMessage = function(message) {
 	var msg = message.toString().trim();
-	console.log(msg);
 	var self = this;
 	if (msg == 'HTTP/1.0 200 OK') {
 		this.player.connection = this.connection;	
@@ -60,7 +59,7 @@ Icecast.prototype.sendMeta = function(metadata) {
 		? util.format('%s - %s', metadata.artist, metadata.title) 
 		: metadata.artist || metadata.title;
 
-	logger.debug(util.format('Send metadata: %s', songName));
+	logger.info(util.format('Send metadata: %s', songName));
 	var options = {
 		host: config.icecast.host,
 		path: encodeURI(util.format('/admin/metadata?pass=%s&mount=%s&mode=updinfo&song=%s', this.password, this.name, songName)),
@@ -88,8 +87,7 @@ Icecast.prototype.updateListeners = function() {
 };
 
 Icecast.prototype.onClose = function() {
-	logger.debug('Connection closed');
-	console.log('Connection closed');
+	logger.info('Connection closed with icecast');
 	if (!this.player.idle) {
 		this.player.stop();
 		this.connection = this.createConnection();
@@ -104,19 +102,21 @@ Icecast.prototype.onConnect = function() {
 
 Icecast.prototype.createConnection = function() {
 	var self = this;
-	var client = net.connect({port: config.icecast.port, host: config.icecast.host}, function() {
+	var c = {port: config.icecast.port, host: config.icecast.host};
+	var client = net.connect(c, function() {
+		logger.debug(util.format('tcp:connected %', util.inspect(c)));
 		self.onConnect();
 	});
 	client.on('data', function(message) {
+		logger.debug(util.format('tcp:in %s', message));
 		self.onMessage(message);
 	});
 	client.on('end', function() {
-		console.log('connection end');
+		logger.debug('tcp:end');
 		self.onClose();
 	});
 	client.on('error', function(error) {
-		console.error(error);
-		logger.debug(error);
+		logger.debug(util.format('tcp:error %s', error));
 	});
 	return client;
 };

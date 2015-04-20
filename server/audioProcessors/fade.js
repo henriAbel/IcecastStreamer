@@ -1,3 +1,4 @@
+var logger = require('logger');
 var stream = require('stream')
 var util = require('util');
 var config = require('config/config');
@@ -46,6 +47,14 @@ Fade.prototype.calcluateVolume = function() {
 		if (this.deck.state == 3) {
 			this.deck.volume = 1 - this.deck.volume;
 		}
+		// Human hearing is logarithmic
+		// TODO: Needs some improvements
+		/*if (this.deck.volume > 0) {
+			if (this.deck.volume < 0.1) this.deck.volume = 0.1;
+			this.deck.volume = Math.log(this.deck.volume * 10) / Math.LN10;	
+		}*/
+		
+		logger.debug(util.format('Song %s volume %d done %s', this.deck.song.path, this.deck.volume, done));
 		if (done) this.emit('fadeDone');
 	}
 }
