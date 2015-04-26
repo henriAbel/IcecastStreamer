@@ -4,12 +4,12 @@ var server = require('server/index.js');
 var playlistRouter = express.Router({mergeParams: true});
 
 playlistRouter.route('/').get(function (request, response) {
-	response.json(server.getInstance().player.playlistManager.compile());
+	response.json(getManager().compile());
 });
 
 playlistRouter.route('/').post(function (request, response) {
 	var name = request.body.name;
-	var result = server.getInstance().player.playlistManager.newPlaylist(name);
+	var result = getManager().newPlaylist(name);
 	response.status(result.error ? 400 : 200);
 	response.json(result);
 });
@@ -17,7 +17,7 @@ playlistRouter.route('/').post(function (request, response) {
 playlistRouter.route('/:id/').put(function (request, response) {
 	var id = request.params.id;
 	var playlist = request.body;
-	var result = server.getInstance().player.playlistManager.modify(playlist);
+	var result = getManager().modify(playlist);
 
 	response.status(result.error ? 400 : 200);
 	response.json(result);
@@ -26,7 +26,7 @@ playlistRouter.route('/:id/').put(function (request, response) {
 playlistRouter.route('/:id/paths').put(function (request, response) {
 	var id = request.params.id;
 	var paths = request.body;
-	server.getInstance().player.playlistManager.updatePlaylist(id, paths);
+	getManager().updatePlaylist(id, paths);
 
 	response.status(200);
 	response.send('Updated');
@@ -35,7 +35,7 @@ playlistRouter.route('/:id/paths').put(function (request, response) {
 playlistRouter.route('/:id/queue').post(function (request, response) {
 	var id = request.params.id;
 	var mode = request.body.mode;
-	var playlistManager = server.getInstance().player.playlistManager;
+	var playlistManager = getManager();
 	var result;
 	if (mode == 0) {
 		result = playlistManager.emptyAdd(id);
@@ -56,10 +56,22 @@ playlistRouter.route('/:id/queue').post(function (request, response) {
 
 playlistRouter.route('/:id/shuffle').post(function (request, response) {
 	var id = request.params.id;
-	var manager = server.getInstance().player.playlistManager;
+	var manager = getManager();
 	var playlist = manager.shuffle(id);
 	response.status(200);
 	response.json(manager.compile(playlist.name)[0]);
 });
+
+playlistRouter.route('/:id/remove/:song').delete(function (request, response) {
+	var playlistId = request.params.id;
+	var songHash = request.params.song;
+	var result = getManager().removeSongFromPlaylist(playlistId, songHash);
+	response.status(result.error ? 400 : 200);
+	response.send();
+});
+
+var getManager = function() {
+	return server.getInstance().player.playlistManager;
+}
 
 module.exports = playlistRouter;

@@ -1,6 +1,6 @@
 app.provider('PlaylistProvider', function() {
     this.$get = ['$resource', function($resource) {
-        var playlist = $resource(apiBase + 'playlist/:id/:action/', {id : '@id', action: '@action'}, {
+        var playlist = $resource(apiBase + 'playlist/:id/:action/:param/', {id : '@id', action: '@action', param: '@param'}, {
             update: {
                 method: 'PUT',
             },
@@ -18,6 +18,12 @@ app.provider('PlaylistProvider', function() {
                 method: 'POST',
                 params: {
                     action: 'shuffle'
+                }
+            },
+            removeSong: {
+                method: 'DELETE',
+                params: {
+                    action: 'remove'
                 }
             }
         });

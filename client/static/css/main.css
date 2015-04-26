@@ -176,3 +176,17 @@ a.dropdown-toggle:hover {
 button.new-playlist {
 	margin: 10px 10px 10px 0px;
 }
+
+.song-control {
+	border-radius: 10px;
+	background-color: #ccc;
+	float: right;
+	padding: 3px 10px;
+	margin-top: -3px;
+	opacity: .2;
+	transition: opacity .2s ease-in-out;
+}
+
+.playlist-item:hover .song-control {
+	opacity: 1;
+}

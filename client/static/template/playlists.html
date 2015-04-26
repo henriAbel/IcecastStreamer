@@ -1,7 +1,6 @@
 <div>
 	<button type="button" class="btn btn-default new-playlist" ng-click="newPlaylist()">Create new playlist</button>	
 </div>
-
 <div class="panel panel-default" ng-repeat="playlist in playlists">
 	<div class="panel-heading clearfix">
 		<div class="playlist-toggle pull-left" ng-click="playlist.visible = !playlist.visible">
@@ -33,6 +32,7 @@
 				<span ng-show="song.metadata.artist && song.metadata.title"> - </span>
 				<span>{{ song.metadata.title }}</span>
 				<span ng-hide="song.metadata.artist || song.metadata.title">{{ song.path }}</span>
+				<span ng-hide="playlist.locked" ng-click="remove(playlist, song);$event.stopPropagation();" class="song-control">remove</span>
 			</li>
 		</ul>
 	</div>

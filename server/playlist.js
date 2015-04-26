@@ -70,7 +70,7 @@ var PlaylistManager = function() {
 			if (!fs.lstatSync(filePath).isDirectory()) {
 				// Could be playlist
 				try {
-					var p = new Playlis(tfileName);
+					var p = new Playlist(fileName);
 					p.load(self.dirname);
 					self.playlists.push(p);
 					if (p.autoShuffle) {
@@ -412,6 +412,34 @@ PlaylistManager.prototype.shuffle = function(playlistId) {
 		shuffle(playlist.paths);
 		playlist.save(this.dirname);
 		return playlist;
+	}
+};
+
+PlaylistManager.prototype.removeSongFromPlaylist = function(playlistId, songHash) {
+	var playlist = this._getPlaylistFromId(playlistId);
+	if (playlist !== undefined) {
+		var song = this._getSongFromHash(songHash);
+		if (song !== undefined) {
+			for (var i = playlist.paths.length - 1; i >= 0; i--) {
+				var e = playlist.paths[i];
+				if (e === song.path) {
+					playlist.paths.splice(i, 1);
+					return {
+						error: false
+					};
+				}
+			}
+		}
+		return {
+			error: true,
+			message: util.format('Song with id: %s not found', songHash)
+		};
+	}
+	else {
+		return {
+			error: true,
+			message: util.format('Playlist with id: %s not found', playlistId)
+		};
 	}
 };
 

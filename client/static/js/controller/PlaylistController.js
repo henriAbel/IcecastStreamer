@@ -11,7 +11,6 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 	$scope.modify = function(playlist) {
 		var modifyObject = angular.copy(playlist);
 		delete modifyObject.files;
-		console.log(modifyObject);
 		PlaylistProvider.update({id: playlist.id}, modifyObject);
 	};
 
@@ -59,6 +58,15 @@ app.controller('PlaylistController', ['$scope', '$modal', 'PlaylistProvider', 'n
 	$scope.shuffle = function(playlist) {
 		PlaylistProvider.shuffle({id: playlist.id}).$promise.then(function(response) {
 			playlist.files = response.files;
+		}, function(error) {
+			console.error(error);
+		});
+	};
+
+	$scope.remove = function(playlist, song) {
+		PlaylistProvider.removeSong({id: playlist.id, param: song.id}).$promise.then(function(response) {
+			var index = playlist.files.indexOf(song);
+			playlist.files.splice(index, 1);
 		}, function(error) {
 			console.error(error);
 		});
