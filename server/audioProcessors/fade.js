@@ -25,7 +25,7 @@ Fade.prototype._transform = function(chunk, encoding, done) {
 				if (i % 10240 == 0) {
 					this.calcluateVolume();
 				}
-			};	
+			};
 		}
 		this.calcluateVolume();
 	}
@@ -51,9 +51,9 @@ Fade.prototype.calcluateVolume = function() {
 		// TODO: Needs some improvements
 		/*if (this.deck.volume > 0) {
 			if (this.deck.volume < 0.1) this.deck.volume = 0.1;
-			this.deck.volume = Math.log(this.deck.volume * 10) / Math.LN10;	
+			this.deck.volume = Math.log(this.deck.volume * 10) / Math.LN10;
 		}*/
-		
+
 		logger.debug(util.format('Song %s volume %d done %s', this.deck.song.path, this.deck.volume, done));
 		if (done) this.emit('fadeDone');
 	}

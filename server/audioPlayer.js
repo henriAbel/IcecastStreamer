@@ -25,6 +25,13 @@ var Player = function(streamer) {
 		self.mainLoop();
 	}, 1000);
 	this.retryCount = 0;
+	this.outBuffer = new Buffer(0);
+	this.sentData = 0;
+	this.outOfSyncCounter = 0;
+	/*
+		Pre compute how big is 60 seconds PCM data.
+	*/
+	this.preData = this.timeToData(60000);
 	logger.info('Audioplayer started');
 };
 
@@ -35,13 +42,13 @@ Player.prototype.createDeck = function(id) {
 	deck.id = id;
 	var self = this;
 	deck.on('position', function(position) {
-		if (this.state == 1 && (!this.song.commercial || config.commercial.crossfade) 
+		if (this.state == 1 && (!this.song.commercial || config.commercial.crossfade)
 			&& this.frameIndex >= this.frames.length - this.corssfadedFrames - 30) {
 
 			this.fadeOut();
 			if (!self.playlistManager.nextCommercial() || config.commercial.crossfade) {
 				var nextDeck = self.getNextDeck(this.id);
-				self.playNext(nextDeck);	
+				self.playNext(nextDeck);
 			}
 		}
 	});
@@ -60,6 +67,7 @@ Player.prototype.start = function() {
 
 	var song = this.playlistManager.getNextSong();
 	this.audioDecks[0].play(song, true);
+	this.startTime = Date.now();
 	this.emit('songStart', song);
 };
 
@@ -67,7 +75,7 @@ Player.prototype.mainLoop = function() {
 	var min, i, j, e;
 	/* 	c = Audiodeck count which have outbuff.length > 0
 		p = Not idling audiodecks
-	*/ 
+	*/
 	var c = 0, p = 0;
 	for (i = this.audioDecks.length - 1; i >= 0; i--) {
 		var d = this.audioDecks[i];
@@ -93,13 +101,14 @@ Player.prototype.mainLoop = function() {
 		}
 		if (this.retryCount > 0) {
 			logger.debug('retry reset');
-			this.retryCount = 0;	
+			this.retryCount = 0;
 		}
 		if (c == 1) {
 			for (i = this.audioDecks.length - 1; i >= 0; i--) {
 				e = this.audioDecks[i].outBuffer;
 				if (e.length > 0) {
-					this.encoder.write(new Buffer(e));
+					this.encoder.write(e);
+					this.sentData += e.length;
 					this.audioDecks[i].outBuffer = new Buffer(0);
 					break;
 				}
@@ -112,15 +121,13 @@ Player.prototype.mainLoop = function() {
 				for (j = this.audioDecks.length - 1; j >= 0; j--) {
 					var buff = this.audioDecks[j].outBuffer;
 					if (buff.length > 0) {
-						value += buff.readInt16LE(i*2);	
+						value += buff.readInt16LE(i*2);
 					}
 				}
 				// Clipping
 				if (value < -32768) value = -32768;
-				if (value > 32767) value = 32767;	
+				if (value > 32767) value = 32767;
 				tmpBuff.writeInt16LE(value, i*2);
-
-				
 			}
 			for (j = this.audioDecks.length - 1; j >= 0; j--) {
 				e = this.audioDecks[j];
@@ -128,11 +135,40 @@ Player.prototype.mainLoop = function() {
 					e.outBuffer = new Buffer(e.outBuffer.slice(min));
 				}
 			}
+			this.sentData += tmpBuff.length;
 			this.encoder.write(tmpBuff);
 		}
-		
+
+		var diff = this.timeToData(Date.now() - this.startTime);
+		log.debug(util.format('Data sent %d, should be sent %d, diff %d', this.sentData, a, this.sentData - diff));
+		/*
+			Check if we are sending data too slow, if necessary ask AudioDeck to send more
+		*/
+		if (this.sentData - diff < 0) {
+			this.outOfSyncCounter++;
+			if (this.outOfSyncCounter > 10) {
+				this.getActiveDeck().getMore(500);
+				this.outOfSyncCounter = 0;
+			}
+		}
+		else {
+			this.outOfSyncCounter = 0;
+		}
+		// U shall not reach max int
+		if (this.sentData > this.preData) {
+			this.sentData -= this.preData;
+			this.startTime += 60000;
+		}
 	}
 };
+
+Player.prototype.timeToData = function(time) {
+	return Math.floor(2 * 16 * 44100 / 1000 / 8 * time);
+}
+
+Player.prototype.dataToTime = function(data) {
+	return data / 2 / 16 / 44100 * 1000 * 8;
+}
 
 Player.prototype.playNext = function(deck) {
 	if (deck.state === 0) {
@@ -153,7 +189,7 @@ Player.prototype.next = function() {
 		deck.fadeOut();
 		if (!this.playlistManager.nextCommercial() || config.commercial.crossfade) {
 			var nextDeck = this.getNextDeck(deck.id);
-			this.playNext(nextDeck);	
+			this.playNext(nextDeck);
 		}
 	}
 	else {
@@ -170,7 +206,7 @@ Player.prototype.getActiveDeck = function() {
 		if (e.state === 1 || e.state === 2) return e;
 		if (e.state === 3) closingDeck = e;
 	}
-	return e;
+	return closingDeck;
 };
 
 Player.prototype.getNextDeck = function(id) {

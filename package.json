@@ -15,7 +15,7 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-usemin": "^3.0.0",
     "grunt-wiredep": "^2.0.0",
-    "lame": "^1.1.1",
+    "lame": "^1.2.3",
     "log4js": "~0.6.24",
     "mp3-parser": "^0.2.5",
     "xml2js": "^0.4.4",

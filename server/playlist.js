@@ -91,7 +91,7 @@ var PlaylistManager = function() {
 			commercialsInRow = config.commercial.frequency.split(':')[1];
 			if (commercialQueue.length > 0) {
 				logger.info(util.format('Found %s commercial(s)', commercialQueue.length));
-				commercialsEnabled = true;	
+				commercialsEnabled = true;
 			}
 		}
 		catch (err) {

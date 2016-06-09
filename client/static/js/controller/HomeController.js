@@ -22,7 +22,7 @@ app.controller('HomeController', ['$scope', 'PlayerProvider', function($scope, P
 	var updateListeners = function() {
 		PlayerProvider.getListeners(function(data) {
 			$scope.listeners = data;
-			var listeners = Number(data.icestats.source[0].listeners);
+			var listeners = Number(data.icestats.source[0].Listeners);
 			$scope.listenerCount = listeners;
 			gauge.set(listeners);
 		});

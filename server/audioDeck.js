@@ -67,6 +67,14 @@ AudioDeck.prototype.fadeOut = function() {
 	this.state = deckState.fadeOut;
 };
 
+AudioDeck.prototype.getMore = function(time) {
+	this.start -= time;
+};
+
+AudioDeck.prototype.getLess = function(time) {
+	this.start += time;
+};
+
 AudioDeck.prototype.play = function(song, fadeIn) {
 	if (this.state !== deckState.idle) {
 		logger.error('AudioDeck already playing');
@@ -81,7 +89,7 @@ AudioDeck.prototype.play = function(song, fadeIn) {
 		this.resampler.configure({
 			sourceRate: newSampleRate,
 			targetRate: config.audio.outSampleRate,
-			stereo : true		
+			stereo : true
 		});
 		this.sampleRate = newSampleRate;
 		logger.debug(util.format('new sampleRate: %d', this.sampleRate));
@@ -92,7 +100,7 @@ AudioDeck.prototype.play = function(song, fadeIn) {
 		logger.error(util.format('Cannot open file: %s', song.path));
 		return;
 	}
-	this.start = Date.now();
+	this.start = Date.now() - 1000;
 	this.frameIndex = 0;
 	this.corssfadedFrames = this.getCrossfadedFrames(this.frames);
 	this.interval = setInterval(function() {
@@ -109,14 +117,15 @@ AudioDeck.prototype.play = function(song, fadeIn) {
 	Mainloop
 */
 AudioDeck.prototype.mainLoop = function() {
-	var now = Date.now() + 900;
+	var now = Date.now();
 	var timeSinceLastSendms = now - this.start;
+	if (timeSinceLastSendms < 0)  return;
 	var currentFrameDuration = this.getFrameDuration(this.frames);
 	var framesToSend = Math.ceil(timeSinceLastSendms / currentFrameDuration);
 	now += framesToSend * currentFrameDuration - timeSinceLastSendms;
 	this.start = now;
 	var lastFrameIndex = this.frameIndex + framesToSend;
-	
+
 	if (this.frames.length <= lastFrameIndex) {
 		lastFrameIndex = this.frames.length -1 ;
 		framesToSend = lastFrameIndex - this.frameIndex;
@@ -130,7 +139,7 @@ AudioDeck.prototype.mainLoop = function() {
 	if (this.state === deckState.idle) {
 		this.stop();
 	}
-	
+
 	this.frameIndex += framesToSend;
 	this.position = Math.round(this.frameIndex / this.frames.length * 100);
 	this.emit('position', this.position);
@@ -155,14 +164,19 @@ AudioDeck.prototype.getCrossfadedFrames = function(frames) {
 };
 
 AudioDeck.prototype.getPosition = function() {
-	if (this.frames.length > 0) {
+	if (this.frames && this.frames.length > 0) {
 		var currentFrameDuration = this.getFrameDuration(this.frames);
 		return {
 			position: this.frameIndex * currentFrameDuration / 1000,
 			length: this.frames.length * currentFrameDuration / 1000
-		};	
+		};
 	}
 	return {};
 };
 
 module.exports = AudioDeck;
+
+
+var toMillis = function(time) {
+	return time[0] * 1000 + time[1] / 1000000;
+}

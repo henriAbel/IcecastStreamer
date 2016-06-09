@@ -52,6 +52,7 @@ Mpeg.prototype.decodeBuffer = function(buffer, callback) {
 };
 
 Mpeg.prototype.getAudioData = function(filePath, frames, startFrame, length) {
+	if (length <= 0) return new Buffer(0);
 	var byteStart = startFrame === 0 ? 0 : frames[startFrame].offset;
 	var lastFrame = frames[startFrame + length];
 	if (lastFrame >= frames.length) lastFrame = frames.length - 1;
@@ -59,8 +60,8 @@ Mpeg.prototype.getAudioData = function(filePath, frames, startFrame, length) {
 	var fd = fs.openSync(filePath, "r");
 	var buffer = new Buffer(byteEnd - byteStart);
 	fs.readSync(fd, buffer, 0, buffer.length, byteStart);
-	fs.close(fd);	
-	
+	fs.close(fd);
+
 	return buffer;
 };
 
@@ -79,11 +80,11 @@ Mpeg.prototype.getFrames = function(filePath) {
 		i++;
 		firstFrame = mp3Parser.readFrame(buffer, i, true);
 	}
-	
+
 	frames.push({
 		offset: firstFrame._section.offset,
 		length: firstFrame._section.byteLength,
-		sampleRate: firstFrame.header.samplingRate	
+		sampleRate: firstFrame.header.samplingRate
 	});
 	var offset = firstFrame._section.nextFrameIndex;
 	// Locate all other frames
@@ -100,7 +101,7 @@ Mpeg.prototype.getFrames = function(filePath) {
 		}
 		frames.push({
 			offset: frame._section.offset,
-			length: frame._section.byteLength	
+			length: frame._section.byteLength
 		});
 
 		offset += frame._section.byteLength;
@@ -127,4 +128,3 @@ Mpeg.prototype.getDecoderInstance = function() {
 };
 
 module.exports = Mpeg;
-

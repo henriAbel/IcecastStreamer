@@ -6,16 +6,16 @@ config.crossfade = 5;
 // If not provided, directory where run script located is used
 config.playstlistDir = '';
 
-config.commerial = {};
-config.commerial.enable = true;
-config.commerial.dir = ['/home/user/Commercial'];
+config.commercial = {};
+config.commercial.enable = true;
+config.commercial.dir = ['/home/user/Commercial'];
 // If set true commecrials are also crossfaded
 config.commercial.crossfade = false;
 /*
 	Frequnecy consists with two numbers. First one shows how many regular songs are played until commecrial
 	Second one shows how many commercials are played one time. Numbers are sperated by :
 */
-config.commerial.frequency = '1:1';
+config.commercial.frequency = '1:1';
 
 config.icecast = {};
 config.icecast.host = 'localhost';
